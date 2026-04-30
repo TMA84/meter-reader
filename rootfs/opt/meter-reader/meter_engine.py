@@ -32,23 +32,19 @@ class MeterEngine:
         self._load_config()
 
     def _load_model(self):
-        """Load TFLite model for digit classification."""
+        """Load TFLite model for digit classification via OpenCV DNN."""
         model_path = os.path.join(self.models_path, "dig-class11.tflite")
         if os.path.exists(model_path):
             try:
-                import tflite_runtime.interpreter as tflite
-
-                self.interpreter = tflite.Interpreter(model_path=model_path)
-                self.interpreter.allocate_tensors()
-                self.input_details = self.interpreter.get_input_details()
-                self.output_details = self.interpreter.get_output_details()
-                logger.info(f"Loaded TFLite model: {model_path}")
+                self.net = cv2.dnn.readNetFromTFLite(model_path)
+                logger.info(f"Loaded TFLite model via OpenCV DNN: {model_path}")
             except Exception as e:
                 logger.error(f"Failed to load model: {e}")
-                self.interpreter = None
+                self.net = None
         else:
             logger.warning(f"Model not found: {model_path}")
             logger.warning("Please download dig-class11.tflite from AI-on-the-edge-device")
+            self.net = None
 
     def _load_config(self):
         """Load meter configuration."""
@@ -225,7 +221,7 @@ class MeterEngine:
 
     def read_meter(self, camera_url: str) -> dict:
         """Perform a full meter reading."""
-        if not self.interpreter:
+        if not self.net:
             return {"success": False, "error": "No model loaded"}
 
         meters = self.config.get("meters", [])
@@ -312,7 +308,7 @@ class MeterEngine:
             return {"success": False, "error": str(e)}
 
     def _classify_digit(self, img: np.ndarray, roi: dict) -> int:
-        """Classify a single digit from the image."""
+        """Classify a single digit from the image using OpenCV DNN."""
         x = roi.get("x", 0)
         y = roi.get("y", 0)
         w = roi.get("w", 50)
@@ -322,25 +318,18 @@ class MeterEngine:
         crop = img[y : y + h, x : x + w]
 
         # Preprocess: resize to model input size (32x20 for dig-class11)
-        input_shape = self.input_details[0]["shape"]
-        target_h = input_shape[1]
-        target_w = input_shape[2]
+        # dig-class11 expects 32x20 grayscale input
+        crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        crop_resized = cv2.resize(crop_gray, (20, 32))
 
-        crop_resized = cv2.resize(crop, (target_w, target_h))
-
-        # Convert to grayscale if needed
-        if len(input_shape) == 4 and input_shape[3] == 1:
-            crop_resized = cv2.cvtColor(crop_resized, cv2.COLOR_BGR2GRAY)
-            crop_resized = np.expand_dims(crop_resized, axis=-1)
-
-        # Normalize to [0, 1]
-        input_data = crop_resized.astype(np.float32) / 255.0
-        input_data = np.expand_dims(input_data, axis=0)
+        # Create blob for OpenCV DNN (normalize to [0, 1])
+        blob = cv2.dnn.blobFromImage(
+            crop_resized, scalefactor=1.0 / 255.0, size=(20, 32), mean=0, swapRB=False
+        )
 
         # Run inference
-        self.interpreter.set_tensor(self.input_details[0]["index"], input_data)
-        self.interpreter.invoke()
-        output = self.interpreter.get_tensor(self.output_details[0]["index"])
+        self.net.setInput(blob)
+        output = self.net.forward()
 
         # Get predicted class (0-9 = digits, 10 = NaN)
         predicted = int(np.argmax(output[0]))
@@ -377,7 +366,7 @@ class MeterEngine:
 
     def test_roi(self, camera_url: str, rois: list) -> dict:
         """Test ROI configuration and return recognized digits."""
-        if not self.interpreter:
+        if not self.net:
             return {"success": False, "error": "No model loaded"}
 
         snapshot_path = self.capture_snapshot(camera_url)

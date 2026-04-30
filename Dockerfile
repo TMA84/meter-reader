@@ -12,9 +12,10 @@ RUN apk add --no-cache \
     jpeg-dev \
     zlib-dev
 
-# Install remaining Python packages (small, pure-python or with wheels)
+# Install remaining Python packages
+# Note: tflite-runtime is not available for Alpine/musl/aarch64
+# We use OpenCV's DNN module to load TFLite models instead
 RUN pip3 install --no-cache-dir --break-system-packages \
-    tflite-runtime \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 
