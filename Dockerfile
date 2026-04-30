@@ -28,10 +28,11 @@ COPY models /opt/meter-reader/models
 # Copy web frontend
 COPY web /opt/meter-reader/web
 
-RUN chmod a+x /etc/services.d/meter-reader/run \
-    && chmod a+x /etc/services.d/meter-reader/finish
+RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="1.0.3" \
+    io.hass.version="1.0.4" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
+
+CMD [ "/run.sh" ]
