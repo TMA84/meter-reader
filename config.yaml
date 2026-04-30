@@ -1,5 +1,5 @@
 name: "Meter Reader"
-version: "1.0.6"
+version: "1.0.7"
 slug: meter-reader
 description: >-
   Liest analoge und digitale Zähler (Wasser, Gas, Strom) per Kamera aus.
@@ -11,6 +11,7 @@ arch:
 url: "https://github.com/your-username/meter-reader-addon"
 startup: application
 boot: auto
+init: false
 ingress: true
 ingress_port: 5000
 ingress_entry: /

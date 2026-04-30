@@ -1,4 +1,4 @@
-FROM ghcr.io/home-assistant/aarch64-base:latest
+FROM ghcr.io/home-assistant/base:latest
 
 # Install Python and dependencies via Alpine packages (pre-compiled, fast)
 RUN apk add --no-cache \
@@ -10,7 +10,8 @@ RUN apk add --no-cache \
     py3-flask \
     py3-opencv \
     jpeg-dev \
-    zlib-dev
+    zlib-dev \
+    bash
 
 # Install remaining Python packages
 # Note: tflite-runtime is not available for Alpine/musl/aarch64
@@ -31,6 +32,8 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="1.0.6" \
+    io.hass.version="1.0.7" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
+
+CMD [ "/run.sh" ]
