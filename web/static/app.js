@@ -7,8 +7,8 @@ let currentConfig = { meters: [], version: 1 };
 let rois = [];
 
 // Determine base path for API calls (ingress support)
-const BASE = document.querySelector('meta[name="ingress-entry"]')?.content
-    || window.location.pathname.replace(/\/$/, '') || '';
+// Works by detecting the path prefix from the current page URL
+const BASE = window.location.pathname.replace(/\/$/, '');
 
 function apiUrl(path) {
     return `${BASE}/api${path}`;

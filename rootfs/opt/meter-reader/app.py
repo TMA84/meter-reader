@@ -93,7 +93,11 @@ engine = MeterEngine(
 @app.route("/")
 def index():
     """Main web UI."""
-    return render_template("index.html", ingress_entry=INGRESS_ENTRY)
+    # HA Ingress sends X-Ingress-Path header with the base path
+    ingress_path = request.headers.get("X-Ingress-Path", INGRESS_ENTRY)
+    if ingress_path and not ingress_path.endswith("/"):
+        ingress_path += "/"
+    return render_template("index.html", ingress_entry=ingress_path)
 
 
 @app.route("/api/config", methods=["GET"])
