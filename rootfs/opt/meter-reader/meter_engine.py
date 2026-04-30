@@ -85,8 +85,7 @@ class MeterEngine:
                 brightness = int(led_intensity * 255 / 100)
                 try:
                     requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_on",
-                        json={"brightness": brightness},
+                        f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
                         timeout=3,
                     )
                 except Exception:
@@ -109,7 +108,7 @@ class MeterEngine:
             if led_intensity > 0 and esphome_base:
                 try:
                     requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_off",
+                        f"{esphome_base}/light/Beleuchtung/turn_off",
                         timeout=3,
                     )
                 except Exception:
@@ -131,7 +130,7 @@ class MeterEngine:
                 esphome_base = self._get_esphome_base(camera_url)
                 if esphome_base:
                     requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_off",
+                        f"{esphome_base}/light/Beleuchtung/turn_off",
                         timeout=3,
                     )
             except Exception:
