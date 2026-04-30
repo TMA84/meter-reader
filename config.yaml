@@ -1,5 +1,5 @@
 name: "Meter Reader"
-version: "1.0.4"
+version: "1.0.5"
 slug: meter-reader
 description: >-
   Liest analoge und digitale Zähler (Wasser, Gas, Strom) per Kamera aus.
@@ -11,7 +11,6 @@ arch:
 url: "https://github.com/your-username/meter-reader-addon"
 startup: application
 boot: auto
-init: false
 ingress: true
 ingress_port: 5000
 ingress_entry: /
@@ -19,6 +18,7 @@ panel_icon: mdi:water-pump
 panel_title: "Meter Reader"
 homeassistant_api: true
 hassio_api: true
+hassio_role: default
 map:
   - type: addon_config
     read_only: false
