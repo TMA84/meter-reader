@@ -87,6 +87,7 @@ class MeterEngine:
                 try:
                     requests.post(
                         f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
+                        headers={"Content-Length": "0"},
                         timeout=3,
                     )
                     # Warten bis Belichtung sich angepasst hat
@@ -109,6 +110,7 @@ class MeterEngine:
                 try:
                     requests.post(
                         f"{esphome_base}/light/Beleuchtung/turn_off",
+                        headers={"Content-Length": "0"},
                         timeout=3,
                     )
                 except Exception:

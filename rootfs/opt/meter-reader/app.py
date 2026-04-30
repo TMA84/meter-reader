@@ -347,16 +347,18 @@ def apply_camera_settings_to_esp(settings: dict) -> dict:
     led_intensity = settings.get("led_intensity", 0)
     try:
         if led_intensity > 0:
-            # ESPHome expects brightness 0-255, uses query params (not JSON)
+            # ESPHome expects brightness 0-255, needs Content-Length header for POST
             brightness = int(led_intensity * 255 / 100)
             resp = req.post(
                 f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
+                headers={"Content-Length": "0"},
                 timeout=3,
             )
             results["led"] = "ok" if resp.status_code == 200 else f"error:{resp.status_code}"
         else:
             resp = req.post(
                 f"{esphome_base}/light/Beleuchtung/turn_off",
+                headers={"Content-Length": "0"},
                 timeout=3,
             )
             results["led"] = "ok" if resp.status_code == 200 else f"error:{resp.status_code}"
