@@ -318,30 +318,9 @@ def apply_camera_settings_to_esp(settings: dict) -> dict:
 
     results = {}
 
-    # ─── Camera image settings via /control endpoint ───────────────────────────
-    cam_control_url = esphome_base + "/control"
-    plain_mappings = {
-        "brightness": settings.get("brightness", 0),
-        "contrast": settings.get("contrast", 0),
-        "saturation": settings.get("saturation", 0),
-        "hmirror": 1 if settings.get("horizontal_mirror") else 0,
-        "vflip": 1 if settings.get("vertical_flip") else 0,
-        "quality": settings.get("jpeg_quality", 10),
-        "special_effect": ["none", "negative", "grayscale", "red_tint",
-                           "green_tint", "blue_tint", "sepia"].index(
-            settings.get("special_effect", "none")
-        ),
-        "ae_level": settings.get("ae_level", 0),
-    }
-
-    for var, val in plain_mappings.items():
-        try:
-            resp = req.get(
-                cam_control_url, params={"var": var, "val": val}, timeout=3
-            )
-            results[var] = "ok" if resp.status_code == 200 else f"error:{resp.status_code}"
-        except Exception:
-            results[var] = "unreachable"
+    # Note: brightness, contrast, saturation, mirror, rotation are applied
+    # server-side in meter_engine.py (OpenCV). No /control endpoint needed.
+    results["image_settings"] = "applied server-side"
 
     # ─── LED via ESPHome light entity ──────────────────────────────────────────
     led_intensity = settings.get("led_intensity", 0)

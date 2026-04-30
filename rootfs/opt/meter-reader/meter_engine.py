@@ -116,11 +116,20 @@ class MeterEngine:
                 except Exception:
                     pass
 
-            # Rotation anwenden
-            if rotation != 0:
+            # Rotation und Spiegelung serverseitig anwenden
+            rotation = cam_settings.get("rotation", 0)
+            h_mirror = cam_settings.get("horizontal_mirror", False)
+            v_flip = cam_settings.get("vertical_flip", False)
+
+            if rotation != 0 or h_mirror or v_flip:
                 img = cv2.imread(snapshot_path)
                 if img is not None:
-                    img = self._rotate_image(img, rotation)
+                    if h_mirror:
+                        img = cv2.flip(img, 1)
+                    if v_flip:
+                        img = cv2.flip(img, 0)
+                    if rotation != 0:
+                        img = self._rotate_image(img, rotation)
                     cv2.imwrite(snapshot_path, img)
 
             return snapshot_path
