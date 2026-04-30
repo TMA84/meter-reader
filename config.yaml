@@ -1,5 +1,5 @@
 name: "Meter Reader"
-version: "1.0.0"
+version: "1.0.1"
 slug: meter-reader
 description: >-
   Liest analoge und digitale Zähler (Wasser, Gas, Strom) per Kamera aus.
