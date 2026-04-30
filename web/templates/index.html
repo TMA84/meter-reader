@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meter Reader</title>
+    <link rel="stylesheet" href="{{ ingress_entry }}static/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <svg class="logo" viewBox="0 0 24 24" width="32" height="32">
+                    <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8"/>
+                </svg>
+                <h1>Meter Reader</h1>
+            </div>
+            <ul class="nav-items">
+                <li class="nav-item active" data-page="dashboard">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/></svg>
+                    <span>Dashboard</span>
+                </li>
+                <li class="nav-item" data-page="configure">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.04 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>
+                    <span>Konfiguration</span>
+                </li>
+                <li class="nav-item" data-page="history">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"/></svg>
+                    <span>Verlauf</span>
+                </li>
+                <li class="nav-item" data-page="camera">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z"/></svg>
+                    <span>Kamera</span>
+                </li>
+                <li class="nav-item" data-page="settings">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97C4.53,12.65 4.5,12.33 4.5,12C4.5,11.67 4.53,11.34 4.57,11L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.78,8.95 21.73,9.22 21.54,9.37L19.43,11C19.47,11.34 19.5,11.67 19.5,12C19.5,12.33 19.47,12.65 19.43,12.97L21.54,14.63C21.73,14.78 21.78,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.94C16.04,18.34 15.5,18.67 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10Z"/></svg>
+                    <span>Einstellungen</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Dashboard Page -->
+            <section id="page-dashboard" class="page active">
+                <div class="page-header">
+                    <h2>Dashboard</h2>
+                    <button class="btn btn-primary" onclick="triggerReading()">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>
+                        Jetzt ablesen
+                    </button>
+                </div>
+
+                <div class="cards">
+                    <div class="card card-value">
+                        <div class="card-label">Aktueller Wert</div>
+                        <div class="card-number" id="current-value">--</div>
+                        <div class="card-unit">m³</div>
+                    </div>
+                    <div class="card card-status">
+                        <div class="card-label">Status</div>
+                        <div class="card-number" id="status-text">--</div>
+                        <div class="card-unit" id="last-read-time"></div>
+                    </div>
+                    <div class="card card-uptime">
+                        <div class="card-label">Uptime</div>
+                        <div class="card-number" id="uptime">--</div>
+                    </div>
+                </div>
+
+                <div class="snapshot-section">
+                    <h3>Kamerabild</h3>
+                    <div class="snapshot-container">
+                        <img id="snapshot-img" src="" alt="Kein Bild verfügbar" />
+                        <button class="btn btn-secondary" onclick="refreshSnapshot()">Bild aktualisieren</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration Page -->
+            <section id="page-configure" class="page">
+                <div class="page-header">
+                    <h2>Konfiguration</h2>
+                    <button class="btn btn-primary" onclick="saveConfiguration()">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
+                        Speichern
+                    </button>
+                </div>
+
+                <!-- ROI Configuration -->
+                <div class="config-section">
+                    <h3>ROI-Konfiguration (Ziffernbereiche)</h3>
+                    <p class="hint">Definiere die Bereiche im Bild, in denen sich die einzelnen Ziffern befinden.</p>
+
+                    <div class="roi-editor">
+                        <div class="roi-image-container">
+                            <canvas id="roi-canvas"></canvas>
+                            <img id="roi-img" src="" alt="Snapshot für ROI" crossorigin="anonymous" />
+                        </div>
+                        <div class="roi-controls">
+                            <button class="btn btn-secondary" onclick="loadRoiImage()">Bild laden</button>
+                            <button class="btn btn-secondary" onclick="addRoi()">+ Ziffer hinzufügen</button>
+                            <button class="btn btn-accent" onclick="testRois()">ROIs testen</button>
+                        </div>
+                    </div>
+
+                    <div id="roi-list" class="roi-list">
+                        <!-- ROI entries will be added dynamically -->
+                    </div>
+
+                    <div id="roi-test-result" class="test-result hidden">
+                        <h4>Testergebnis</h4>
+                        <div id="test-digits"></div>
+                    </div>
+                </div>
+
+                <!-- Meter Settings -->
+                <div class="config-section">
+                    <h3>Zähler-Einstellungen</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="meter-name">Name</label>
+                            <input type="text" id="meter-name" value="Wasserzähler" />
+                        </div>
+                        <div class="form-group">
+                            <label for="decimal-position">Nachkommastellen</label>
+                            <input type="number" id="decimal-position" value="3" min="0" max="5" />
+                        </div>
+                        <div class="form-group">
+                            <label for="max-rate">Max. Anstieg pro Ablesung (Liter)</label>
+                            <input type="number" id="max-rate" value="500" min="1" />
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-value">Startwert (optional)</label>
+                            <input type="number" id="initial-value" step="0.001" placeholder="z.B. 123.456" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Page -->
+            <section id="page-history" class="page">
+                <div class="page-header">
+                    <h2>Verlauf</h2>
+                    <button class="btn btn-secondary" onclick="loadHistory()">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>
+                        Aktualisieren
+                    </button>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="history-chart"></canvas>
+                </div>
+
+                <div class="readings-table-container">
+                    <table class="readings-table">
+                        <thead>
+                            <tr>
+                                <th>Zeitpunkt</th>
+                                <th>Wert (m³)</th>
+                                <th>Roh</th>
+                            </tr>
+                        </thead>
+                        <tbody id="readings-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Camera Page -->
+            <section id="page-camera" class="page">
+                <div class="page-header">
+                    <h2>Kamera-Einstellungen</h2>
+                    <button class="btn btn-primary" onclick="saveCameraSettings()">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
+                        Speichern &amp; Anwenden
+                    </button>
+                </div>
+
+                <div class="camera-layout">
+                    <div class="camera-preview">
+                        <div class="config-section">
+                            <h3>Live-Vorschau</h3>
+                            <div class="snapshot-container">
+                                <img id="camera-preview-img" src="" alt="Kamerabild" />
+                                <button class="btn btn-secondary btn-sm" onclick="refreshCameraPreview()">Aktualisieren</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls">
+                        <div class="config-section">
+                            <h3>LED-Beleuchtung</h3>
+                            <div class="slider-group">
+                                <label>Intensität</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-led-intensity" min="0" max="100" value="50" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-led-intensity-val">50</span>
+                                </div>
+                                <span class="field-hint">0 = aus, 100 = maximale Helligkeit</span>
+                            </div>
+                            <div class="slider-group">
+                                <label>Verzögerung nach Einschalten (ms)</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-led-delay" min="0" max="3000" step="50" value="500" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-led-delay-val">500</span>
+                                </div>
+                                <span class="field-hint">Wartezeit bis die Kamera das Bild aufnimmt (Belichtung anpassen)</span>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Bild-Anpassungen</h3>
+                            <div class="slider-group">
+                                <label>Helligkeit</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-brightness" min="-2" max="2" value="0" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-brightness-val">0</span>
+                                </div>
+                            </div>
+                            <div class="slider-group">
+                                <label>Kontrast</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-contrast" min="-2" max="2" value="0" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-contrast-val">0</span>
+                                </div>
+                            </div>
+                            <div class="slider-group">
+                                <label>Sättigung</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-saturation" min="-2" max="2" value="0" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-saturation-val">0</span>
+                                </div>
+                            </div>
+                            <div class="slider-group">
+                                <label>Belichtungskorrektur</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-ae-level" min="-2" max="2" value="0" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-ae-level-val">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Bildoptionen</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="cam-special-effect">Effekt</label>
+                                    <select id="cam-special-effect">
+                                        <option value="none">Keiner</option>
+                                        <option value="negative">Negativ</option>
+                                        <option value="grayscale">Graustufen</option>
+                                        <option value="red_tint">Rot-Tönung</option>
+                                        <option value="green_tint">Grün-Tönung</option>
+                                        <option value="blue_tint">Blau-Tönung</option>
+                                        <option value="sepia">Sepia</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cam-wb-mode">Weißabgleich</label>
+                                    <select id="cam-wb-mode">
+                                        <option value="auto">Automatisch</option>
+                                        <option value="sunny">Sonnig</option>
+                                        <option value="cloudy">Bewölkt</option>
+                                        <option value="office">Büro</option>
+                                        <option value="home">Zuhause</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cam-resolution">Auflösung</label>
+                                    <select id="cam-resolution">
+                                        <option value="320x240">320×240 (QVGA)</option>
+                                        <option value="640x480">640×480 (VGA)</option>
+                                        <option value="800x600" selected>800×600 (SVGA)</option>
+                                        <option value="1024x768">1024×768 (XGA)</option>
+                                        <option value="1280x1024">1280×1024 (SXGA)</option>
+                                        <option value="1600x1200">1600×1200 (UXGA)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cam-jpeg-quality">JPEG-Qualität</label>
+                                    <input type="number" id="cam-jpeg-quality" min="6" max="63" value="10" />
+                                    <span class="field-hint">6 = beste Qualität, 63 = kleinste Datei</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>Ausrichtung</h3>
+                            <div class="slider-group">
+                                <label>Drehung (°)</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-rotation" min="0" max="359" value="0" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-rotation-val">0</span>
+                                </div>
+                                <span class="field-hint">Serverseitige Rotation – nützlich wenn die Kamera schräg montiert ist</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Horizontal spiegeln</label>
+                                    <label class="toggle">
+                                        <input type="checkbox" id="cam-hmirror" />
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="field-hint">Wird auf der Kamera angewendet</span>
+                                </div>
+                                <div class="form-group">
+                                    <label>Vertikal spiegeln</label>
+                                    <label class="toggle">
+                                        <input type="checkbox" id="cam-vflip" checked />
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="field-hint">Wird auf der Kamera angewendet</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Page -->
+            <section id="page-settings" class="page">
+                <div class="page-header">
+                    <h2>Einstellungen</h2>
+                    <button class="btn btn-primary" onclick="saveSettings()">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
+                        Speichern
+                    </button>
+                </div>
+
+                <div class="config-section">
+                    <h3>Kamera</h3>
+                    <div class="form-grid">
+                        <div class="form-group form-group-wide">
+                            <label for="setting-camera-url">Kamera-URL (Snapshot-Endpunkt)</label>
+                            <input type="url" id="setting-camera-url" placeholder="http://192.168.1.50:8080/snapshot" />
+                        </div>
+                    </div>
+                    <div class="setting-hint">
+                        <button class="btn btn-secondary btn-sm" onclick="testCameraConnection()">Verbindung testen</button>
+                        <span id="camera-test-result" class="test-indicator"></span>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Ablesung</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="setting-interval">Intervall (Minuten)</label>
+                            <input type="number" id="setting-interval" min="1" max="60" value="5" />
+                            <span class="field-hint">Wie oft der Zähler abgelesen wird (1–60 Min.)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>MQTT</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="setting-mqtt-enabled">MQTT aktiviert</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="setting-mqtt-enabled" />
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-mqtt-host">Broker Host</label>
+                            <input type="text" id="setting-mqtt-host" placeholder="core-mosquitto" />
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-mqtt-port">Broker Port</label>
+                            <input type="number" id="setting-mqtt-port" min="1" max="65535" value="1883" />
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-mqtt-username">Benutzername</label>
+                            <input type="text" id="setting-mqtt-username" placeholder="(optional)" />
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-mqtt-password">Passwort</label>
+                            <input type="password" id="setting-mqtt-password" placeholder="(optional)" />
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-mqtt-topic">Topic</label>
+                            <input type="text" id="setting-mqtt-topic" placeholder="meter-reader/water/value" />
+                        </div>
+                    </div>
+                    <div class="setting-hint">
+                        <button class="btn btn-secondary btn-sm" onclick="testMqttConnection()">Verbindung testen</button>
+                        <span id="mqtt-test-result" class="test-indicator"></span>
+                    </div>
+                </div>
+
+                <div class="config-section config-section-info">
+                    <h3>Info</h3>
+                    <p class="hint">
+                        Diese Einstellungen können auch über die Home Assistant Addon-Konfiguration gesetzt werden.
+                        Änderungen hier überschreiben die Addon-Konfiguration zur Laufzeit und werden persistent gespeichert.
+                    </p>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Quelle</span>
+                            <span class="info-value" id="settings-source">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Modell</span>
+                            <span class="info-value" id="settings-model">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="{{ ingress_entry }}static/app.js"></script>
+</body>
+</html>

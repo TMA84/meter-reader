@@ -1,0 +1,13 @@
+configuration:
+  camera_url:
+    name: Camera URL
+    description: URL to the ESP32-CAM snapshot endpoint
+  read_interval_minutes:
+    name: Read Interval
+    description: How often to read the meter (in minutes)
+  mqtt_enabled:
+    name: MQTT Enabled
+    description: Enable MQTT publishing of readings
+  mqtt_topic:
+    name: MQTT Topic
+    description: MQTT topic to publish readings to

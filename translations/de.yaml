@@ -1,0 +1,13 @@
+configuration:
+  camera_url:
+    name: Kamera-URL
+    description: URL zum ESP32-CAM Snapshot-Endpunkt
+  read_interval_minutes:
+    name: Ableseintervall
+    description: Wie oft der Zähler abgelesen wird (in Minuten)
+  mqtt_enabled:
+    name: MQTT aktiviert
+    description: MQTT-Veröffentlichung der Ablesungen aktivieren
+  mqtt_topic:
+    name: MQTT-Topic
+    description: MQTT-Topic für die Veröffentlichung der Ablesungen

@@ -1,0 +1,49 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libjpeg62-turbo \
+    libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages
+RUN pip install --no-cache-dir \
+    "numpy<2" \
+    opencv-python-headless==4.9.0.80 \
+    Pillow \
+    flask==3.0.* \
+    paho-mqtt==2.1.* \
+    schedule==1.2.* \
+    requests
+
+# Try tflite-runtime, fall back to full tensorflow if not available for platform
+RUN pip install --no-cache-dir tflite-runtime==2.14.0 || \
+    pip install --no-cache-dir "tensorflow<2.16"
+
+# Copy application
+COPY rootfs/opt/meter-reader/ /opt/meter-reader/
+COPY web/ /opt/meter-reader/web/
+COPY models/ /opt/meter-reader/models/
+
+# Create data directories
+RUN mkdir -p /data/snapshots /data/logs /config
+
+# Copy default config
+COPY rootfs/opt/meter-reader/default_config.json /config/meter_config.json
+
+WORKDIR /opt/meter-reader
+
+EXPOSE 5000
+
+ENV CAMERA_URL="http://host.containers.internal:8080/snapshot"
+ENV READ_INTERVAL="5"
+ENV MQTT_ENABLED="false"
+ENV MQTT_TOPIC="meter-reader/water/value"
+ENV INGRESS_ENTRY=""
+ENV SUPERVISOR_TOKEN=""
+ENV CONFIG_DIR="/config"
+ENV DATA_DIR="/data"
+
+CMD ["python3", "app.py"]
