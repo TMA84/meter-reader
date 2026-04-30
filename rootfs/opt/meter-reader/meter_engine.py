@@ -73,11 +73,12 @@ class MeterEngine:
         logger.info("Configuration saved")
 
     def capture_snapshot(self, camera_url: str) -> str | None:
-        """Capture a snapshot from the camera with LED control."""
+        """Capture a snapshot from the camera with optional LED control."""
         try:
             cam_settings = self._get_camera_settings()
             led_intensity = cam_settings.get("led_intensity", 0)
             led_delay_ms = cam_settings.get("led_delay_ms", 500)
+            rotation = cam_settings.get("rotation", 0)
             esphome_base = self._get_esphome_base(camera_url)
 
             # LED einschalten (falls Intensität > 0)
@@ -88,11 +89,10 @@ class MeterEngine:
                         f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
                         timeout=3,
                     )
-                except Exception:
-                    pass
-
-                # Warten bis Belichtung sich angepasst hat
-                time.sleep(led_delay_ms / 1000.0)
+                    # Warten bis Belichtung sich angepasst hat
+                    time.sleep(led_delay_ms / 1000.0)
+                except Exception as e:
+                    logger.warning(f"LED control failed (continuing without): {e}")
 
             # Snapshot aufnehmen
             resp = requests.get(camera_url, timeout=10)
@@ -115,7 +115,6 @@ class MeterEngine:
                     pass
 
             # Rotation anwenden
-            rotation = cam_settings.get("rotation", 0)
             if rotation != 0:
                 img = cv2.imread(snapshot_path)
                 if img is not None:
@@ -125,16 +124,6 @@ class MeterEngine:
             return snapshot_path
         except Exception as e:
             logger.error(f"Snapshot capture failed: {e}")
-            # LED sicherheitshalber ausschalten
-            try:
-                esphome_base = self._get_esphome_base(camera_url)
-                if esphome_base:
-                    requests.post(
-                        f"{esphome_base}/light/Beleuchtung/turn_off",
-                        timeout=3,
-                    )
-            except Exception:
-                pass
             return None
 
     def _get_esphome_base(self, camera_url: str) -> str | None:
