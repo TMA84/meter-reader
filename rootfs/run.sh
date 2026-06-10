@@ -61,27 +61,6 @@ if [ ! -f /config/meter_config.json ]; then
     bashio::log.info "Standard-Zählerkonfiguration angelegt"
 fi
 
-# ─── TFLite-Modell herunterladen wenn nicht vorhanden ─────────────────────────
-MODEL_PATH="/opt/meter-reader/models/dig-class11.tflite"
-MODEL_URL="https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.3.tflite"
-MODEL_URL_FALLBACK="https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.2.tflite"
-
-if [ ! -f "${MODEL_PATH}" ]; then
-    bashio::log.info "TFLite-Modell nicht gefunden – lade herunter..."
-    if wget -q --timeout=30 -O "${MODEL_PATH}" "${MODEL_URL}"; then
-        bashio::log.info "Modell erfolgreich heruntergeladen: dig-class11-v2.3.tflite"
-    elif wget -q --timeout=30 -O "${MODEL_PATH}" "${MODEL_URL_FALLBACK}"; then
-        bashio::log.info "Modell heruntergeladen (Fallback): dig-class11-v2.2.tflite"
-    else
-        bashio::log.warning "Modell konnte nicht heruntergeladen werden – manuelle Installation nötig"
-        bashio::log.warning "Pfad: ${MODEL_PATH}"
-        bashio::log.warning "URL: ${MODEL_URL}"
-        rm -f "${MODEL_PATH}"
-    fi
-else
-    bashio::log.info "TFLite-Modell vorhanden: ${MODEL_PATH}"
-fi
-
 # ─── Start ─────────────────────────────────────────────────────────────────────
 bashio::log.info "Kamera-URL: ${CAMERA_URL}"
 bashio::log.info "Ablesungsintervall: ${READ_INTERVAL} Minuten"
