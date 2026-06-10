@@ -58,9 +58,9 @@ esp32_camera:
   vsync_pin: GPIO25
   href_pin: GPIO23
   pixel_clock_pin: GPIO22
-  power_down_pin:
-    number: GPIO32
-    inverted: true
+  # OV3660 PWDN is active LOW: ESPHome drives HIGH then LOW during init,
+  # which correctly sleeps then wakes the OV3660 (opposite of OV2640)
+  power_down_pin: GPIO32
 
   resolution: 800x600
   jpeg_quality: 10
