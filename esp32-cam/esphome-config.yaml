@@ -6,21 +6,32 @@ esphome:
   name: wasserzaehler-cam
   friendly_name: "Wasserzähler Kamera"
   on_boot:
-    priority: 600
+    priority: 800
     then:
       - lambda: |-
-          // I2C-Bus zurücksetzen bevor die Kamera initialisiert wird
+          // OV2640 Hardware-Reset via PWDN-Pin (GPIO32, active HIGH = power down)
+          // und I2C-Bus freigeben – muss vor Kamera-Init laufen (priority 800)
+          pinMode(32, OUTPUT);
+          digitalWrite(32, HIGH);   // Sensor in Power-Down
+          delay(10);
+          digitalWrite(32, LOW);    // Sensor aufwecken
+          delay(10);
+          // I2C-Bus freigeben (9 SCL-Pulse)
           pinMode(26, OUTPUT);
           pinMode(27, OUTPUT);
+          digitalWrite(26, HIGH);
           for (int i = 0; i < 9; i++) {
             digitalWrite(27, HIGH);
-            delayMicroseconds(5);
+            delayMicroseconds(10);
             digitalWrite(27, LOW);
-            delayMicroseconds(5);
+            delayMicroseconds(10);
           }
           digitalWrite(26, LOW);
-          delayMicroseconds(5);
+          delayMicroseconds(10);
           digitalWrite(27, HIGH);
+          delayMicroseconds(10);
+          digitalWrite(26, HIGH);
+          delay(5);
 
 esp32:
   board: esp32cam
