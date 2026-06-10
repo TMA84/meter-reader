@@ -5,6 +5,22 @@
 esphome:
   name: wasserzaehler-cam
   friendly_name: "Wasserzähler Kamera"
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          // I2C-Bus zurücksetzen bevor die Kamera initialisiert wird
+          pinMode(26, OUTPUT);
+          pinMode(27, OUTPUT);
+          for (int i = 0; i < 9; i++) {
+            digitalWrite(27, HIGH);
+            delayMicroseconds(5);
+            digitalWrite(27, LOW);
+            delayMicroseconds(5);
+          }
+          digitalWrite(26, LOW);
+          delayMicroseconds(5);
+          digitalWrite(27, HIGH);
 
 esp32:
   board: esp32cam
