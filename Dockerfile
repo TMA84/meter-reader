@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:3.21
 
-# System-Abhängigkeiten
+# System-Abhängigkeiten (py3-opencv aus Alpine = vorgebaut, kein Compile nötig)
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -8,19 +8,14 @@ RUN apk add --no-cache \
     py3-pillow \
     py3-requests \
     py3-flask \
+    py3-opencv \
     jpeg-dev \
     zlib-dev \
     bash \
-    wget \
-    # OpenCV aus source braucht diese Build-Deps nicht –
-    # wir installieren opencv-python via pip (enthält 4.9+)
-    libstdc++ \
-    libgomp
+    wget
 
-# opencv-python-headless bringt OpenCV 4.9+ mit TFLite-Support (readNetFromTFLite)
-# tflite-runtime als Fallback für direkten Interpreter-Zugriff
+# Nur kleine Python-Pakete die kein nativen Build brauchen
 RUN pip3 install --no-cache-dir --break-system-packages \
-    opencv-python-headless==4.9.* \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 

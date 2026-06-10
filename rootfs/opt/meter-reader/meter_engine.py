@@ -34,16 +34,25 @@ class MeterEngine:
     def _load_model(self):
         """Load TFLite model for digit classification via OpenCV DNN."""
         model_path = os.path.join(self.models_path, "dig-class11.tflite")
-        if os.path.exists(model_path):
-            try:
-                self.net = cv2.dnn.readNetFromTFLite(model_path)
-                logger.info(f"Loaded TFLite model via OpenCV DNN: {model_path}")
-            except Exception as e:
-                logger.error(f"Failed to load model: {e}")
-                self.net = None
-        else:
+        if not os.path.exists(model_path):
             logger.warning(f"Model not found: {model_path}")
-            logger.warning("Please download dig-class11.tflite from AI-on-the-edge-device")
+            logger.warning("dig-class11.tflite wird beim nächsten Start automatisch heruntergeladen")
+            self.net = None
+            return
+
+        if not hasattr(cv2.dnn, "readNetFromTFLite"):
+            logger.error(
+                f"OpenCV {cv2.__version__} unterstützt readNetFromTFLite() nicht. "
+                "Mindestversion: 4.8. Bitte Addon neu bauen."
+            )
+            self.net = None
+            return
+
+        try:
+            self.net = cv2.dnn.readNetFromTFLite(model_path)
+            logger.info(f"TFLite-Modell geladen: {model_path} (OpenCV {cv2.__version__})")
+        except Exception as e:
+            logger.error(f"Modell konnte nicht geladen werden: {e}")
             self.net = None
 
     def _load_config(self):
