@@ -10,7 +10,7 @@ esphome:
 esp32:
   board: esp32cam
   framework:
-    type: arduino
+    type: esp-idf
 
 # ─── PSRAM (benötigt für Kamera) ──────────────────────────────────────────────
 psram:
@@ -49,16 +49,12 @@ ota:
 web_server:
   port: 80
 
-# ─── I2C Bus für Kamera ───────────────────────────────────────────────────────
-i2c:
-  - id: camera_i2c
-    sda: GPIO26
-    scl: GPIO27
-
 # ─── Kamera ───────────────────────────────────────────────────────────────────
 esp32_camera:
   name: "Wasserzaehler"
-  i2c_id: camera_i2c
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
   external_clock:
     pin: GPIO0
     frequency: 20MHz
