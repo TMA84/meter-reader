@@ -31,7 +31,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.0.0" \
+    io.hass.version="2.0.1" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
