@@ -83,28 +83,27 @@ class MeterEngine:
     def capture_snapshot(self, camera_url: str) -> str | None:
         """Capture a snapshot from the camera with optional LED control."""
         if not self._snapshot_lock.acquire(blocking=False):
-            # Another snapshot is in progress - return last cached image
             snapshot_path = os.path.join(self.data_path, "snapshots", "latest.jpg")
             return snapshot_path if os.path.exists(snapshot_path) else None
-        try:
-            cam_settings = self._get_camera_settings()
-            led_intensity = cam_settings.get("led_intensity", 0)
-            led_delay_ms = cam_settings.get("led_delay_ms", 500)
-            rotation = cam_settings.get("rotation", 0)
-            esphome_base = self._get_esphome_base(camera_url)
 
-            # LED einschalten (falls Intensität > 0)
-            logger.info(f"Snapshot: led_intensity={led_intensity}, esphome_base={esphome_base}")
+        cam_settings = self._get_camera_settings()
+        led_intensity = cam_settings.get("led_intensity", 0)
+        led_delay_ms = cam_settings.get("led_delay_ms", 500)
+        esphome_base = self._get_esphome_base(camera_url)
+        led_on = False
+
+        try:
+            # LED einschalten
             if led_intensity > 0 and esphome_base:
                 brightness = int(led_intensity * 255 / 100)
                 try:
-                    resp_led = requests.post(
+                    requests.post(
                         f"{esphome_base}/light/beleuchtung/turn_on?brightness={brightness}",
                         headers={"Content-Length": "0"},
                         timeout=3,
                     )
-                    logger.info(f"LED on: HTTP {resp_led.status_code}")
-                    # Ersten alten Frame wegwerfen (noch ohne LED-Beleuchtung)
+                    led_on = True
+                    # Ersten alten Frame wegwerfen (Puffer vor LED-Einschalten)
                     try:
                         requests.get(camera_url, timeout=5, headers={"Connection": "close"})
                     except Exception:
@@ -120,27 +119,13 @@ class MeterEngine:
 
             snapshot_path = os.path.join(self.data_path, "snapshots", "latest.jpg")
             os.makedirs(os.path.dirname(snapshot_path), exist_ok=True)
-
             with open(snapshot_path, "wb") as f:
                 f.write(resp.content)
 
-            # LED ausschalten - kurz warten damit Farben stabil bleiben
-            if led_intensity > 0 and esphome_base:
-                time.sleep(0.5)
-                try:
-                    requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_off",
-                        headers={"Content-Length": "0"},
-                        timeout=3,
-                    )
-                except Exception:
-                    pass
-
-            # Rotation und Spiegelung serverseitig anwenden
-            rotation = cam_settings.get("rotation", 0)
+            # Rotation und Spiegelung anwenden
             h_mirror = cam_settings.get("horizontal_mirror", False)
             v_flip = cam_settings.get("vertical_flip", False)
-
+            rotation = cam_settings.get("rotation", 0)
             if rotation != 0 or h_mirror or v_flip:
                 img = cv2.imread(snapshot_path)
                 if img is not None:
@@ -157,6 +142,17 @@ class MeterEngine:
             logger.error(f"Snapshot capture failed: {e}")
             return None
         finally:
+            # LED immer ausschalten - egal ob Fehler oder nicht
+            if led_on and esphome_base:
+                time.sleep(0.5)
+                try:
+                    requests.post(
+                        f"{esphome_base}/light/beleuchtung/turn_off",
+                        headers={"Content-Length": "0"},
+                        timeout=3,
+                    )
+                except Exception:
+                    pass
             self._snapshot_lock.release()
 
     def _get_esphome_base(self, camera_url: str) -> str | None:
