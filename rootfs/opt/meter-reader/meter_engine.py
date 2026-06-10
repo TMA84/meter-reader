@@ -88,14 +88,16 @@ class MeterEngine:
             esphome_base = self._get_esphome_base(camera_url)
 
             # LED einschalten (falls Intensität > 0)
+            logger.info(f"Snapshot: led_intensity={led_intensity}, esphome_base={esphome_base}")
             if led_intensity > 0 and esphome_base:
                 brightness = int(led_intensity * 255 / 100)
                 try:
-                    requests.post(
-                        f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
+                    resp_led = requests.post(
+                        f"{esphome_base}/light/beleuchtung/turn_on?brightness={brightness}",
                         headers={"Content-Length": "0"},
                         timeout=3,
                     )
+                    logger.info(f"LED on: HTTP {resp_led.status_code}")
                     # Warten bis Belichtung sich angepasst hat
                     time.sleep(led_delay_ms / 1000.0)
                 except Exception as e:
