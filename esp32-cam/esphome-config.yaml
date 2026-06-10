@@ -1,37 +1,10 @@
-# ESPHome-Konfiguration für ESP32-CAM (AI-Thinker)
+# ESPHome-Konfiguration für ESP32-CAM (AI-Thinker kompatibel)
 # Aufgabe: Kamerabild per Snapshot-Endpunkt bereitstellen + LED steuern
 # Die KI-Verarbeitung übernimmt vollständig das HA Addon (meter-reader).
 
 esphome:
   name: wasserzaehler-cam
   friendly_name: "Wasserzähler Kamera"
-  on_boot:
-    priority: 800
-    then:
-      - lambda: |-
-          // OV2640 Hardware-Reset via PWDN-Pin (GPIO32, active HIGH = power down)
-          // und I2C-Bus freigeben – muss vor Kamera-Init laufen (priority 800)
-          pinMode(32, OUTPUT);
-          digitalWrite(32, HIGH);   // Sensor in Power-Down
-          delay(10);
-          digitalWrite(32, LOW);    // Sensor aufwecken
-          delay(10);
-          // I2C-Bus freigeben (9 SCL-Pulse)
-          pinMode(26, OUTPUT);
-          pinMode(27, OUTPUT);
-          digitalWrite(26, HIGH);
-          for (int i = 0; i < 9; i++) {
-            digitalWrite(27, HIGH);
-            delayMicroseconds(10);
-            digitalWrite(27, LOW);
-            delayMicroseconds(10);
-          }
-          digitalWrite(26, LOW);
-          delayMicroseconds(10);
-          digitalWrite(27, HIGH);
-          delayMicroseconds(10);
-          digitalWrite(26, HIGH);
-          delay(5);
 
 esp32:
   board: esp32cam
@@ -39,6 +12,8 @@ esp32:
     type: arduino
 
 psram:
+  mode: quad
+  speed: 40MHz
 
 # ─── WLAN ──────────────────────────────────────────────────────────────────────
 wifi:
@@ -70,8 +45,7 @@ ota:
 web_server:
   port: 80
 
-# ─── Kamera (OV2640 auf AI-Thinker ESP32-CAM) ─────────────────────────────────
-# Pins sind fest verdrahtet auf dem AI-Thinker Board, nicht ändern.
+# ─── Kamera (OV2640, AI-Thinker Pin-Belegung) ────────────────────────────────
 esp32_camera:
   name: "Wasserzaehler"
   external_clock:
@@ -86,18 +60,15 @@ esp32_camera:
   pixel_clock_pin: GPIO22
   power_down_pin: GPIO32
 
-  # Bildqualität: SVGA reicht für Ziffererkennung, JPEG 10 = gute Qualität
   resolution: 800x600
   jpeg_quality: 10
   vertical_flip: true
   horizontal_mirror: false
 
-  # Belichtung automatisch – Feinkorrektur über Addon-Einstellungen
   aec_mode: auto
   ae_level: 0
   wb_mode: auto
 
-  # Niedrige Framerate = weniger Wärme, stabiler Betrieb
   max_framerate: 2fps
   idle_framerate: 0.05fps
   frame_buffer_count: 2
@@ -109,8 +80,6 @@ esp32_camera_web_server:
     mode: snapshot
 
 # ─── Flash-LED (GPIO4, PWM) ───────────────────────────────────────────────────
-# Das Addon schaltet die LED vor jedem Snapshot ein und danach aus.
-# Kanal 2 ist nötig weil die Kamera PWM-Kanal 0+1 belegt.
 output:
   - platform: ledc
     pin: GPIO4
