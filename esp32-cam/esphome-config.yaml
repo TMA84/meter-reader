@@ -15,7 +15,6 @@ psram:
   mode: quad
   speed: 40MHz
 
-
 # ─── WLAN ──────────────────────────────────────────────────────────────────────
 wifi:
   ssid: !secret wifi_ssid
@@ -51,7 +50,7 @@ esp32_camera:
   name: "Wasserzaehler"
   external_clock:
     pin: GPIO0
-    frequency: 10MHz
+    frequency: 20MHz
   i2c_pins:
     sda: GPIO26
     scl: GPIO27
@@ -59,8 +58,6 @@ esp32_camera:
   vsync_pin: GPIO25
   href_pin: GPIO23
   pixel_clock_pin: GPIO22
-  # OV3660 PWDN is active LOW: ESPHome drives HIGH then LOW during init,
-  # which correctly sleeps then wakes the OV3660 (opposite of OV2640)
   power_down_pin: GPIO32
 
   resolution: 800x600
