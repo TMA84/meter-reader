@@ -1,26 +1,20 @@
-FROM ghcr.io/home-assistant/base:3.21
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-# System-Abhängigkeiten
-RUN apk add --no-cache \
+# System-Abhängigkeiten (Debian bookworm = glibc, manylinux-Wheels funktionieren)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
-    py3-numpy \
-    py3-pillow \
-    py3-requests \
-    py3-flask \
-    py3-opencv \
-    jpeg-dev \
-    zlib-dev \
-    bash
+    python3-pip \
+    python3-numpy \
+    python3-pil \
+    python3-requests \
+    python3-flask \
+    python3-opencv \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
 
-# Alpine's py3-opencv hat eine ungültige dist-info ("python-4.10.0") die pip
-# zum Absturz bringt. Die dist-info umbenennen damit pip sie ignoriert.
-RUN find /usr/lib/python3* -name "opencv*.dist-info" -type d \
-    | xargs -I{} mv {} {}.disabled 2>/dev/null || true
-
-# Jetzt können pip-Pakete normal installiert werden
+# Python-Pakete (ai-edge-litert benötigt glibc/manylinux, daher Debian statt Alpine)
 RUN pip3 install --no-cache-dir --break-system-packages \
-    --index-url https://pypi.org/simple/ \
     ai-edge-litert==2.1.5 \
     paho-mqtt==2.1.* \
     schedule==1.2.*
@@ -28,7 +22,7 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 # Copy application
 COPY rootfs /
 
-# Modell aus dem Repo (kein Netzwerkzugriff beim Build nötig)
+# Modell aus dem Repo
 RUN mkdir -p /opt/meter-reader/models
 COPY models/dig-class11.tflite /opt/meter-reader/models/dig-class11.tflite
 
@@ -38,7 +32,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.1.1" \
+    io.hass.version="2.1.2" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
