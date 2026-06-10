@@ -20,6 +20,7 @@ RUN find /usr/lib/python3* -name "opencv*.dist-info" -type d \
 
 # Jetzt können pip-Pakete normal installiert werden
 RUN pip3 install --no-cache-dir --break-system-packages \
+    --index-url https://pypi.org/simple/ \
     ai-edge-litert==2.1.5 \
     paho-mqtt==2.1.* \
     schedule==1.2.*
@@ -37,7 +38,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.1.0" \
+    io.hass.version="2.1.1" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
