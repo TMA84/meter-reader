@@ -1,6 +1,7 @@
-# ESPHome-Konfiguration für ESP32-CAM (AI-Thinker kompatibel)
-# Aufgabe: Kamerabild per Snapshot-Endpunkt bereitstellen + LED steuern
-# Die KI-Verarbeitung übernimmt vollständig das HA Addon (meter-reader).
+# ─────────────────────────────────────────────────────────────────────────────
+# ESPHome Konfiguration für ESP32-CAM (AI-Thinker Board)
+# Nur Kamera + Webserver – keine AI-Verarbeitung auf dem ESP32
+# ─────────────────────────────────────────────────────────────────────────────
 
 esphome:
   name: wasserzaehler-cam
@@ -9,8 +10,9 @@ esphome:
 esp32:
   board: esp32cam
   framework:
-    type: esp-idf
+    type: arduino
 
+# ─── PSRAM (benötigt für Kamera) ──────────────────────────────────────────────
 psram:
   mode: quad
   speed: 40MHz
@@ -19,8 +21,10 @@ psram:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  # Statische IP wird über den Router (DHCP-Reservation) vergeben
   fast_connect: true
   reboot_timeout: 5min
+
   ap:
     ssid: "Wasserzaehler-Fallback"
     password: "meter12345"
@@ -29,7 +33,7 @@ captive_portal:
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logger:
-  level: WARN
+  level: INFO
 
 # ─── Home Assistant API ────────────────────────────────────────────────────────
 api:
@@ -41,60 +45,73 @@ ota:
   - platform: esphome
     password: !secret ota_password
 
-# ─── Webserver (ESPHome-UI + LED-Steuerung durch Addon) ───────────────────────
+# ─── Webserver (für Snapshot-Zugriff und Kamera-Steuerung) ─────────────────────
 web_server:
   port: 80
 
-# ─── Kamera (OV2640, AI-Thinker Pin-Belegung) ────────────────────────────────
+# ─── I2C Bus für Kamera ───────────────────────────────────────────────────────
+i2c:
+  - id: camera_i2c
+    sda: GPIO26
+    scl: GPIO27
+
+# ─── Kamera ───────────────────────────────────────────────────────────────────
 esp32_camera:
   name: "Wasserzaehler"
+  i2c_id: camera_i2c
   external_clock:
     pin: GPIO0
     frequency: 20MHz
-  i2c_pins:
-    sda: GPIO26
-    scl: GPIO27
   data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
   vsync_pin: GPIO25
   href_pin: GPIO23
   pixel_clock_pin: GPIO22
   power_down_pin: GPIO32
 
+  # Bildeinstellungen
   resolution: 800x600
   jpeg_quality: 10
   vertical_flip: true
   horizontal_mirror: false
 
+  # Bildanpassungen (können vom Meter Reader Addon überschrieben werden)
+  brightness: 0
+  contrast: 0
+  saturation: 0
+
+  # Belichtung
   aec_mode: auto
   ae_level: 0
+
+  # Weißabgleich
   wb_mode: auto
 
-  max_framerate: 2fps
-  idle_framerate: 0.05fps
-  frame_buffer_count: 2
+  # Framerate niedrig halten = weniger Strom, weniger Hitze
+  max_framerate: 5fps
+  idle_framerate: 0.1fps
 
-# ─── Snapshot-Endpunkt (Port 8080) ────────────────────────────────────────────
-# Das Addon ruft http://<ip>:8080/ auf (mode: snapshot liefert auf /)
+# ─── Kamera Webserver (Snapshot-Endpunkt) ──────────────────────────────────────
 esp32_camera_web_server:
   - port: 8080
     mode: snapshot
 
-# ─── Flash-LED (GPIO4, PWM) ───────────────────────────────────────────────────
+# ─── LED-Steuerung (Flash-LED auf GPIO4) ──────────────────────────────────────
 output:
   - platform: ledc
     pin: GPIO4
     id: flash_led
     frequency: 1000Hz
-    channel: 2
+    channel: 2  # Kamera nutzt PWM-Timer 1, LED muss auf anderem Kanal
 
 light:
   - platform: monochromatic
     output: flash_led
     name: "Beleuchtung"
     id: led_light
+    # LED wird vom Addon gesteuert (an vor Snapshot, aus danach)
     restore_mode: ALWAYS_OFF
 
-# ─── Diagnose-Sensoren ────────────────────────────────────────────────────────
+# ─── Sensoren (Diagnose) ──────────────────────────────────────────────────────
 sensor:
   - platform: wifi_signal
     name: "WLAN Signal"
@@ -104,10 +121,12 @@ sensor:
     name: "Uptime"
     update_interval: 60s
 
+# ─── Buttons ──────────────────────────────────────────────────────────────────
 button:
   - platform: restart
     name: "Neustart"
 
+# ─── Status-LED ───────────────────────────────────────────────────────────────
 status_led:
   pin:
     number: GPIO33
