@@ -66,7 +66,6 @@ esp32_camera:
   vsync_pin: GPIO25
   href_pin: GPIO23
   pixel_clock_pin: GPIO22
-  power_down_pin: GPIO32
 
   # Bildeinstellungen
   resolution: 800x600
