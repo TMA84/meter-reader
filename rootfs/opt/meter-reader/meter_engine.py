@@ -103,12 +103,13 @@ class MeterEngine:
                         timeout=3,
                     )
                     led_on = True
-                    # Ersten alten Frame wegwerfen (Puffer vor LED-Einschalten)
-                    try:
-                        requests.get(camera_url, timeout=5, headers={"Connection": "close"})
-                    except Exception:
-                        pass
-                    # Warten bis Belichtung sich angepasst hat
+                    # Alte Frames aus dem Buffer wegwerfen (frame_buffer_count=2)
+                    for _ in range(2):
+                        try:
+                            requests.get(camera_url, timeout=5, headers={"Connection": "close"})
+                        except Exception:
+                            pass
+                    # Warten bis AEC die Belichtung angepasst hat
                     time.sleep(led_delay_ms / 1000.0)
                 except Exception as e:
                     logger.warning(f"LED control failed (continuing without): {e}")
@@ -142,9 +143,10 @@ class MeterEngine:
             logger.error(f"Snapshot capture failed: {e}")
             return None
         finally:
-            # LED immer ausschalten - egal ob Fehler oder nicht
+            # LED immer ausschalten - kurz warten damit letzter Frame vollständig belichtet
             if led_on and esphome_base:
-                time.sleep(0.5)
+                led_off_delay_ms = cam_settings.get("led_off_delay_ms", 300)
+                time.sleep(led_off_delay_ms / 1000.0)
                 try:
                     requests.post(
                         f"{esphome_base}/light/beleuchtung/turn_off",
