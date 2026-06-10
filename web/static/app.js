@@ -535,9 +535,68 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
+// ─── Diagnostics / Setup Banner ───────────────────────────────────────────────
+async function loadDiagnostics() {
+    try {
+        const resp = await fetch(apiUrl('/diagnostics'));
+        const d = await resp.json();
+
+        const banner = document.getElementById('setup-banner');
+        const stepsEl = document.getElementById('setup-steps');
+
+        if (d.setup_complete) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        // Build step list
+        const steps = [
+            {
+                done: d.model.loaded,
+                label: d.model.loaded
+                    ? `KI-Modell geladen (${d.model.size_kb} KB)`
+                    : 'KI-Modell fehlt – wird beim nächsten Start automatisch heruntergeladen',
+                action: null,
+            },
+            {
+                done: d.camera.reachable,
+                label: d.camera.reachable
+                    ? `Kamera erreichbar (${d.camera.url})`
+                    : `Kamera nicht erreichbar: ${d.camera.error || d.camera.url} → <a onclick="navigateTo('settings')">Einstellungen öffnen</a>`,
+                action: null,
+            },
+            {
+                done: d.config.has_rois,
+                label: d.config.has_rois
+                    ? `${d.config.roi_count} Ziffernbereiche konfiguriert`
+                    : 'Ziffernbereiche (ROIs) noch nicht konfiguriert → <a onclick="navigateTo(\'configure\')">Konfiguration öffnen</a>',
+                action: null,
+            },
+        ];
+
+        stepsEl.innerHTML = steps.map(s => `
+            <div class="setup-step ${s.done ? 'done' : 'todo'}">
+                <span class="setup-step-icon">${s.done ? '✓' : '○'}</span>
+                <span>${s.label}</span>
+            </div>
+        `).join('');
+
+        banner.classList.remove('hidden');
+    } catch (e) {
+        console.error('Diagnostics load failed:', e);
+    }
+}
+
+function navigateTo(page) {
+    const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
+    if (navItem) navItem.click();
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 loadStatus();
+loadDiagnostics();
 refreshSnapshot();
 
-// Auto-refresh status every 30s
+// Auto-refresh status every 30s, diagnostics every 60s
 setInterval(loadStatus, 30000);
+setInterval(loadDiagnostics, 60000);

@@ -2,7 +2,7 @@
 
 bashio::log.info "Starting Meter Reader Addon..."
 
-# Read configuration
+# ─── Read addon configuration ──────────────────────────────────────────────────
 CAMERA_URL=""
 READ_INTERVAL="5"
 MQTT_ENABLED="false"
@@ -49,20 +49,42 @@ export SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
 export CONFIG_DIR="/config"
 export DATA_DIR="/data"
 
-# Ensure data directories exist
+# ─── Verzeichnisse anlegen ─────────────────────────────────────────────────────
 mkdir -p /data/snapshots
 mkdir -p /data/logs
 mkdir -p /config
+mkdir -p /opt/meter-reader/models
 
-# Initialize config file if not exists
+# ─── Standard-Konfiguration kopieren wenn nicht vorhanden ─────────────────────
 if [ ! -f /config/meter_config.json ]; then
     cp /opt/meter-reader/default_config.json /config/meter_config.json
-    bashio::log.info "Created default meter configuration"
+    bashio::log.info "Standard-Zählerkonfiguration angelegt"
 fi
 
-bashio::log.info "Camera URL: ${CAMERA_URL}"
-bashio::log.info "Read interval: ${READ_INTERVAL} minutes"
-bashio::log.info "MQTT enabled: ${MQTT_ENABLED}"
+# ─── TFLite-Modell herunterladen wenn nicht vorhanden ─────────────────────────
+MODEL_PATH="/opt/meter-reader/models/dig-class11.tflite"
+MODEL_URL="https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.3.tflite"
+MODEL_URL_FALLBACK="https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.2.tflite"
 
-# Start the application
+if [ ! -f "${MODEL_PATH}" ]; then
+    bashio::log.info "TFLite-Modell nicht gefunden – lade herunter..."
+    if wget -q --timeout=30 -O "${MODEL_PATH}" "${MODEL_URL}"; then
+        bashio::log.info "Modell erfolgreich heruntergeladen: dig-class11-v2.3.tflite"
+    elif wget -q --timeout=30 -O "${MODEL_PATH}" "${MODEL_URL_FALLBACK}"; then
+        bashio::log.info "Modell heruntergeladen (Fallback): dig-class11-v2.2.tflite"
+    else
+        bashio::log.warning "Modell konnte nicht heruntergeladen werden – manuelle Installation nötig"
+        bashio::log.warning "Pfad: ${MODEL_PATH}"
+        bashio::log.warning "URL: ${MODEL_URL}"
+        rm -f "${MODEL_PATH}"
+    fi
+else
+    bashio::log.info "TFLite-Modell vorhanden: ${MODEL_PATH}"
+fi
+
+# ─── Start ─────────────────────────────────────────────────────────────────────
+bashio::log.info "Kamera-URL: ${CAMERA_URL}"
+bashio::log.info "Ablesungsintervall: ${READ_INTERVAL} Minuten"
+bashio::log.info "MQTT: ${MQTT_ENABLED}"
+
 exec python3 /opt/meter-reader/app.py

@@ -138,11 +138,11 @@ class MeterEngine:
             return None
 
     def _get_esphome_base(self, camera_url: str) -> str | None:
-        """Derive ESPHome webserver base URL from camera URL."""
+        """Derive ESPHome webserver base URL (port 80) from camera URL."""
         try:
-            # camera_url: http://192.168.1.50:8080/snapshot → http://192.168.1.50
             from urllib.parse import urlparse
             parsed = urlparse(camera_url)
+            # ESPHome webserver runs on port 80, camera snapshot on :8080
             return f"{parsed.scheme}://{parsed.hostname}"
         except Exception:
             return None

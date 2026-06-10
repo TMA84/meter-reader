@@ -1,6 +1,6 @@
-FROM ghcr.io/home-assistant/base:latest
+FROM ghcr.io/home-assistant/base:3.21
 
-# Install Python and dependencies via Alpine packages (pre-compiled, fast)
+# System-Abhängigkeiten
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -8,15 +8,19 @@ RUN apk add --no-cache \
     py3-pillow \
     py3-requests \
     py3-flask \
-    py3-opencv \
     jpeg-dev \
     zlib-dev \
-    bash
+    bash \
+    wget \
+    # OpenCV aus source braucht diese Build-Deps nicht –
+    # wir installieren opencv-python via pip (enthält 4.9+)
+    libstdc++ \
+    libgomp
 
-# Install remaining Python packages
-# Note: tflite-runtime is not available for Alpine/musl/aarch64
-# We use OpenCV's DNN module to load TFLite models instead
+# opencv-python-headless bringt OpenCV 4.9+ mit TFLite-Support (readNetFromTFLite)
+# tflite-runtime als Fallback für direkten Interpreter-Zugriff
 RUN pip3 install --no-cache-dir --break-system-packages \
+    opencv-python-headless==4.9.* \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 
@@ -32,7 +36,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="1.0.8" \
+    io.hass.version="2.0.0" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 

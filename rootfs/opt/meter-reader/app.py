@@ -239,6 +239,72 @@ def update_settings():
     return jsonify({"status": "ok", "settings": app_settings})
 
 
+@app.route("/api/diagnostics", methods=["GET"])
+def get_diagnostics():
+    """System-Diagnose: Modell, Kamera, Konfiguration."""
+    import cv2
+
+    # Modell-Status
+    model_path = "/opt/meter-reader/models/dig-class11.tflite"
+    model_exists = os.path.exists(model_path)
+    model_size_kb = round(os.path.getsize(model_path) / 1024) if model_exists else 0
+    model_loaded = engine.net is not None
+
+    # OpenCV-Version
+    opencv_version = cv2.__version__
+    opencv_tflite_ok = False
+    try:
+        # Prüfen ob readNetFromTFLite verfügbar ist
+        hasattr(cv2.dnn, "readNetFromTFLite")
+        opencv_tflite_ok = True
+    except Exception:
+        pass
+
+    # Kamera erreichbar?
+    camera_reachable = False
+    camera_error = None
+    try:
+        import requests as req
+        resp = req.get(app_settings["camera_url"], timeout=5, headers={"Connection": "close"})
+        camera_reachable = resp.status_code == 200
+    except Exception as e:
+        camera_error = str(e)
+
+    # Konfiguration vollständig?
+    config = engine.get_config()
+    meters = config.get("meters", [])
+    has_meter = len(meters) > 0
+    has_rois = has_meter and len(meters[0].get("rois", [])) > 0
+    roi_count = len(meters[0].get("rois", [])) if has_meter else 0
+
+    # Setup-Status ableiten
+    setup_complete = model_loaded and camera_reachable and has_rois
+
+    return jsonify({
+        "setup_complete": setup_complete,
+        "model": {
+            "path": model_path,
+            "exists": model_exists,
+            "size_kb": model_size_kb,
+            "loaded": model_loaded,
+        },
+        "opencv": {
+            "version": opencv_version,
+            "tflite_support": opencv_tflite_ok,
+        },
+        "camera": {
+            "url": app_settings["camera_url"],
+            "reachable": camera_reachable,
+            "error": camera_error,
+        },
+        "config": {
+            "has_meter": has_meter,
+            "has_rois": has_rois,
+            "roi_count": roi_count,
+        },
+    })
+
+
 @app.route("/api/mqtt/test", methods=["POST"])
 def test_mqtt():
     """Test MQTT broker connection."""
@@ -311,10 +377,10 @@ def save_camera_settings(settings: dict):
 def apply_camera_settings_to_esp(settings: dict) -> dict:
     """Apply camera settings to ESP32-CAM via its REST API."""
     import requests as req
+    from urllib.parse import urlparse
 
-    base_url = app_settings["camera_url"].rsplit("/", 1)[0]  # e.g. http://192.168.1.50:8080
-    # Derive the ESPHome webserver base (port 80)
-    esphome_base = base_url.split(":8080")[0]  # e.g. http://192.168.1.50
+    parsed = urlparse(app_settings["camera_url"])
+    esphome_base = f"{parsed.scheme}://{parsed.hostname}"  # port 80, always
 
     results = {}
 
