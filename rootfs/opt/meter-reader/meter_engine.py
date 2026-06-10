@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import threading
 import time
 from datetime import datetime
 from io import BytesIO
@@ -28,6 +29,7 @@ class MeterEngine:
         self.last_read_time = None
         self.interpreter = None  # ai-edge-litert Interpreter
         self.input_details = None
+        self._snapshot_lock = threading.Lock()
         self.output_details = None
 
         self._load_model()
@@ -80,6 +82,10 @@ class MeterEngine:
 
     def capture_snapshot(self, camera_url: str) -> str | None:
         """Capture a snapshot from the camera with optional LED control."""
+        if not self._snapshot_lock.acquire(blocking=False):
+            # Another snapshot is in progress - return last cached image
+            snapshot_path = os.path.join(self.data_path, "snapshots", "latest.jpg")
+            return snapshot_path if os.path.exists(snapshot_path) else None
         try:
             cam_settings = self._get_camera_settings()
             led_intensity = cam_settings.get("led_intensity", 0)
@@ -104,7 +110,7 @@ class MeterEngine:
                     logger.warning(f"LED control failed (continuing without): {e}")
 
             # Snapshot aufnehmen
-            resp = requests.get(camera_url, timeout=10, headers={"Connection": "close"})
+            resp = requests.get(camera_url, timeout=15, headers={"Connection": "close"})
             resp.raise_for_status()
 
             snapshot_path = os.path.join(self.data_path, "snapshots", "latest.jpg")
@@ -144,6 +150,8 @@ class MeterEngine:
         except Exception as e:
             logger.error(f"Snapshot capture failed: {e}")
             return None
+        finally:
+            self._snapshot_lock.release()
 
     def _get_esphome_base(self, camera_url: str) -> str | None:
         """Derive ESPHome webserver base URL (port 80) from camera URL."""
