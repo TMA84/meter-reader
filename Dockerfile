@@ -11,8 +11,7 @@ RUN apk add --no-cache \
     py3-opencv \
     jpeg-dev \
     zlib-dev \
-    bash \
-    wget
+    bash
 
 # Alpine's py3-opencv hat eine ungültige dist-info ("python-4.10.0") die pip
 # zum Absturz bringt. Die dist-info umbenennen damit pip sie ignoriert.
@@ -24,16 +23,12 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 
-# TFLite-Modell direkt beim Build herunterladen
-RUN mkdir -p /opt/meter-reader/models && wget -q --timeout=60 \
-    -O /opt/meter-reader/models/dig-class11.tflite \
-    "https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.3.tflite" \
-    || wget -q --timeout=60 \
-    -O /opt/meter-reader/models/dig-class11.tflite \
-    "https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.2.tflite"
-
 # Copy application
 COPY rootfs /
+
+# Modell aus dem Repo (kein Netzwerkzugriff beim Build nötig)
+RUN mkdir -p /opt/meter-reader/models
+COPY models/dig-class11.tflite /opt/meter-reader/models/dig-class11.tflite
 
 # Copy web frontend
 COPY web /opt/meter-reader/web
@@ -41,7 +36,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.0.5" \
+    io.hass.version="2.0.6" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
