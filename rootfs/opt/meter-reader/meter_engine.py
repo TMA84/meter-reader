@@ -124,11 +124,12 @@ class MeterEngine:
             with open(snapshot_path, "wb") as f:
                 f.write(resp.content)
 
-            # LED ausschalten
+            # LED ausschalten - kurz warten damit Farben stabil bleiben
             if led_intensity > 0 and esphome_base:
+                time.sleep(0.5)
                 try:
                     requests.post(
-                        f"{esphome_base}/light/Beleuchtung/turn_off",
+                        f"{esphome_base}/light/beleuchtung/turn_off",
                         headers={"Content-Length": "0"},
                         timeout=3,
                     )
