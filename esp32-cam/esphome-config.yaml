@@ -11,9 +11,6 @@ esp32:
   framework:
     type: esp-idf
 
-psram:
-  mode: quad
-  speed: 40MHz
 
 # ─── WLAN ──────────────────────────────────────────────────────────────────────
 wifi:
@@ -73,7 +70,6 @@ esp32_camera:
 
   max_framerate: 2fps
   idle_framerate: 0.05fps
-  frame_buffer_count: 2
 
 # ─── Snapshot-Endpunkt (Port 8080) ────────────────────────────────────────────
 # Das Addon ruft http://<ip>:8080/ auf (mode: snapshot liefert auf /)
