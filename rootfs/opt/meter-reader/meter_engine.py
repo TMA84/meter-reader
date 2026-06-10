@@ -104,6 +104,11 @@ class MeterEngine:
                         timeout=3,
                     )
                     logger.info(f"LED on: HTTP {resp_led.status_code}")
+                    # Ersten alten Frame wegwerfen (noch ohne LED-Beleuchtung)
+                    try:
+                        requests.get(camera_url, timeout=5, headers={"Connection": "close"})
+                    except Exception:
+                        pass
                     # Warten bis Belichtung sich angepasst hat
                     time.sleep(led_delay_ms / 1000.0)
                 except Exception as e:
