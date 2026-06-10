@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:3.21
 
-# System-Abhängigkeiten (py3-opencv aus Alpine = vorgebaut, kein Compile nötig)
+# System-Abhängigkeiten
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -14,10 +14,13 @@ RUN apk add --no-cache \
     bash \
     wget
 
-# pip upgraden damit es mit Alpine's ungültiger opencv-Versionsbezeichnung
-# ("python-4.10.0") umgehen kann, dann Pakete installieren
-RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip && \
-    pip3 install --no-cache-dir --break-system-packages \
+# Alpine's py3-opencv hat eine ungültige dist-info ("python-4.10.0") die pip
+# zum Absturz bringt. Die dist-info umbenennen damit pip sie ignoriert.
+RUN find /usr/lib/python3* -name "opencv*.dist-info" -type d \
+    | xargs -I{} mv {} {}.disabled 2>/dev/null || true
+
+# Jetzt können pip-Pakete normal installiert werden
+RUN pip3 install --no-cache-dir --break-system-packages \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 
@@ -33,7 +36,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.0.2" \
+    io.hass.version="2.0.3" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
