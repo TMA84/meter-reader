@@ -242,23 +242,18 @@ def update_settings():
 @app.route("/api/diagnostics", methods=["GET"])
 def get_diagnostics():
     """System-Diagnose: Modell, Kamera, Konfiguration."""
-    import cv2
-
     # Modell-Status
     model_path = "/opt/meter-reader/models/dig-class11.tflite"
     model_exists = os.path.exists(model_path)
     model_size_kb = round(os.path.getsize(model_path) / 1024) if model_exists else 0
-    model_loaded = engine.net is not None
+    model_loaded = engine.interpreter is not None
 
-    # OpenCV-Version
-    opencv_version = cv2.__version__
-    opencv_tflite_ok = False
+    # Runtime-Info
     try:
-        # Prüfen ob readNetFromTFLite verfügbar ist
-        hasattr(cv2.dnn, "readNetFromTFLite")
-        opencv_tflite_ok = True
-    except Exception:
-        pass
+        from ai_edge_litert.interpreter import Interpreter
+        runtime = "ai-edge-litert"
+    except ImportError:
+        runtime = "nicht verfügbar"
 
     # Kamera erreichbar?
     camera_reachable = False
@@ -288,10 +283,7 @@ def get_diagnostics():
             "size_kb": model_size_kb,
             "loaded": model_loaded,
         },
-        "opencv": {
-            "version": opencv_version,
-            "tflite_support": opencv_tflite_ok,
-        },
+        "runtime": runtime,
         "camera": {
             "url": app_settings["camera_url"],
             "reachable": camera_reachable,

@@ -26,34 +26,31 @@ class MeterEngine:
         self.start_time = time.time()
         self.last_reading = None
         self.last_read_time = None
-        self.interpreter = None
+        self.interpreter = None  # ai-edge-litert Interpreter
+        self.input_details = None
+        self.output_details = None
 
         self._load_model()
         self._load_config()
 
     def _load_model(self):
-        """Load TFLite model for digit classification via OpenCV DNN."""
+        """Load TFLite model via ai-edge-litert (supports TFL3 format)."""
         model_path = os.path.join(self.models_path, "dig-class11.tflite")
         if not os.path.exists(model_path):
-            logger.warning(f"Model not found: {model_path}")
-            logger.warning("dig-class11.tflite wird beim nächsten Start automatisch heruntergeladen")
-            self.net = None
-            return
-
-        if not hasattr(cv2.dnn, "readNetFromTFLite"):
-            logger.error(
-                f"OpenCV {cv2.__version__} unterstützt readNetFromTFLite() nicht. "
-                "Mindestversion: 4.8. Bitte Addon neu bauen."
-            )
-            self.net = None
+            logger.warning(f"Modell nicht gefunden: {model_path}")
             return
 
         try:
-            self.net = cv2.dnn.readNetFromTFLite(model_path)
-            logger.info(f"TFLite-Modell geladen: {model_path} (OpenCV {cv2.__version__})")
+            from ai_edge_litert.interpreter import Interpreter
+            self.interpreter = Interpreter(model_path=model_path)
+            self.interpreter.allocate_tensors()
+            self.input_details = self.interpreter.get_input_details()
+            self.output_details = self.interpreter.get_output_details()
+            shape = self.input_details[0]['shape']
+            logger.info(f"TFLite-Modell geladen: {model_path} (Input: {shape})")
         except Exception as e:
             logger.error(f"Modell konnte nicht geladen werden: {e}")
-            self.net = None
+            self.interpreter = None
 
     def _load_config(self):
         """Load meter configuration."""
@@ -229,8 +226,8 @@ class MeterEngine:
 
     def read_meter(self, camera_url: str) -> dict:
         """Perform a full meter reading."""
-        if not self.net:
-            return {"success": False, "error": "No model loaded"}
+        if not self.interpreter:
+            return {"success": False, "error": "Kein Modell geladen"}
 
         meters = self.config.get("meters", [])
         if not meters:
@@ -316,32 +313,38 @@ class MeterEngine:
             return {"success": False, "error": str(e)}
 
     def _classify_digit(self, img: np.ndarray, roi: dict) -> int:
-        """Classify a single digit from the image using OpenCV DNN."""
+        """Classify a single digit from the image using ai-edge-litert."""
         x = roi.get("x", 0)
         y = roi.get("y", 0)
         w = roi.get("w", 50)
         h = roi.get("h", 50)
 
-        # Extract ROI
         crop = img[y : y + h, x : x + w]
 
-        # Preprocess: resize to model input size (32x20 for dig-class11)
-        # dig-class11 expects 32x20 grayscale input
-        crop_gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        crop_resized = cv2.resize(crop_gray, (20, 32))
+        # Modell-Input-Shape ermitteln: [1, H, W, C]
+        shape = self.input_details[0]['shape']
+        model_h, model_w, model_c = int(shape[1]), int(shape[2]), int(shape[3])
 
-        # Create blob for OpenCV DNN (normalize to [0, 1])
-        blob = cv2.dnn.blobFromImage(
-            crop_resized, scalefactor=1.0 / 255.0, size=(20, 32), mean=0, swapRB=False
-        )
+        if model_c == 1:
+            crop_resized = cv2.resize(cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY), (model_w, model_h))
+            input_data = crop_resized.reshape(1, model_h, model_w, 1)
+        else:
+            crop_resized = cv2.resize(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB), (model_w, model_h))
+            input_data = crop_resized.reshape(1, model_h, model_w, model_c)
 
-        # Run inference
-        self.net.setInput(blob)
-        output = self.net.forward()
+        # Normalisieren je nach Datentyp (float32 → [0,1], uint8 → unverändert)
+        dtype = self.input_details[0]['dtype']
+        if dtype == np.float32:
+            input_data = input_data.astype(np.float32) / 255.0
+        else:
+            input_data = input_data.astype(dtype)
 
-        # Get predicted class (0-9 = digits, 10 = NaN)
-        predicted = int(np.argmax(output[0]))
-        return predicted
+        self.interpreter.set_tensor(self.input_details[0]['index'], input_data)
+        self.interpreter.invoke()
+        output = self.interpreter.get_tensor(self.output_details[0]['index'])
+
+        # Klasse 0-9 = Ziffern, 10 = NaN
+        return int(np.argmax(output[0]))
 
     def _log_reading(self, value: float, raw: str):
         """Append reading to log file."""
@@ -374,8 +377,8 @@ class MeterEngine:
 
     def test_roi(self, camera_url: str, rois: list) -> dict:
         """Test ROI configuration and return recognized digits."""
-        if not self.net:
-            return {"success": False, "error": "No model loaded"}
+        if not self.interpreter:
+            return {"success": False, "error": "Kein Modell geladen"}
 
         snapshot_path = self.capture_snapshot(camera_url)
         if not snapshot_path:
