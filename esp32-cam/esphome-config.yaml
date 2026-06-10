@@ -33,7 +33,9 @@ captive_portal:
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logger:
-  level: INFO
+  level: DEBUG
+  logs:
+    esp-idf: DEBUG
 
 # ─── Home Assistant API ────────────────────────────────────────────────────────
 api:
