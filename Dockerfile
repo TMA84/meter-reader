@@ -14,8 +14,10 @@ RUN apk add --no-cache \
     bash \
     wget
 
-# Nur kleine Python-Pakete die kein nativen Build brauchen
-RUN pip3 install --no-cache-dir --break-system-packages \
+# pip upgraden damit es mit Alpine's ungültiger opencv-Versionsbezeichnung
+# ("python-4.10.0") umgehen kann, dann Pakete installieren
+RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip && \
+    pip3 install --no-cache-dir --break-system-packages \
     paho-mqtt==2.1.* \
     schedule==1.2.*
 
@@ -31,7 +33,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.0.1" \
+    io.hass.version="2.0.2" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
