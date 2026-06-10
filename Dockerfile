@@ -25,7 +25,7 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     schedule==1.2.*
 
 # TFLite-Modell direkt beim Build herunterladen
-RUN wget -q --timeout=60 \
+RUN mkdir -p /opt/meter-reader/models && wget -q --timeout=60 \
     -O /opt/meter-reader/models/dig-class11.tflite \
     "https://github.com/jomjol/AI-on-the-edge-device/raw/rolling/sd-card/config/neuralnets/dig-class11/dig-class11-v2.3.tflite" \
     || wget -q --timeout=60 \
@@ -41,7 +41,7 @@ COPY web /opt/meter-reader/web
 RUN chmod a+x /run.sh
 
 LABEL \
-    io.hass.version="2.0.4" \
+    io.hass.version="2.0.5" \
     io.hass.type="addon" \
     io.hass.arch="aarch64|amd64"
 
