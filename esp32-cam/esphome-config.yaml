@@ -5,28 +5,6 @@
 esphome:
   name: wasserzaehler-cam
   friendly_name: "Wasserzähler Kamera"
-  on_boot:
-    priority: 700
-    then:
-      - lambda: |-
-          // I2C bus recovery: toggle SCL 9x to unstick a held SDA
-          gpio_set_direction(GPIO_NUM_26, GPIO_MODE_OUTPUT);
-          gpio_set_direction(GPIO_NUM_27, GPIO_MODE_OUTPUT);
-          gpio_set_level(GPIO_NUM_26, 1);
-          for (int i = 0; i < 9; i++) {
-            gpio_set_level(GPIO_NUM_27, 0);
-            esp_rom_delay_us(5);
-            gpio_set_level(GPIO_NUM_27, 1);
-            esp_rom_delay_us(5);
-          }
-          // STOP condition: SDA LOW->HIGH while SCL HIGH
-          gpio_set_level(GPIO_NUM_26, 0);
-          esp_rom_delay_us(5);
-          gpio_set_level(GPIO_NUM_26, 1);
-          esp_rom_delay_us(5);
-          // Release pins back to input for I2C driver
-          gpio_set_direction(GPIO_NUM_26, GPIO_MODE_INPUT);
-          gpio_set_direction(GPIO_NUM_27, GPIO_MODE_INPUT);
 
 esp32:
   board: esp32cam
