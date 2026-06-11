@@ -117,24 +117,20 @@ def save_config():
 
 @app.route("/api/snapshot", methods=["GET"])
 def get_snapshot():
-    """Get current camera snapshot."""
-    img_path = engine.capture_snapshot(app_settings["camera_url"])
+    """Return cached snapshot (captured by background thread)."""
+    img_path = engine.get_cached_snapshot()
     if img_path:
-        return send_from_directory(
-            os.path.dirname(img_path), os.path.basename(img_path)
-        )
-    return jsonify({"error": "Could not capture snapshot"}), 500
+        return send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
+    return jsonify({"error": "No snapshot available yet"}), 503
 
 
 @app.route("/api/snapshot/annotated", methods=["GET"])
 def get_annotated_snapshot():
-    """Get snapshot with ROI overlay."""
-    img_path = engine.capture_annotated_snapshot(app_settings["camera_url"])
+    """Return cached annotated snapshot (captured by background thread)."""
+    img_path = engine.get_cached_annotated_snapshot()
     if img_path:
-        return send_from_directory(
-            os.path.dirname(img_path), os.path.basename(img_path)
-        )
-    return jsonify({"error": "Could not capture snapshot"}), 500
+        return send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
+    return jsonify({"error": "No snapshot available yet"}), 503
 
 
 @app.route("/api/read", methods=["POST"])
@@ -555,6 +551,18 @@ def report_to_mqtt(value):
         logger.error(f"MQTT publish failed: {e}")
 
 
+# ─── Background snapshot thread ────────────────────────────────────────────────
+
+def run_snapshot_loop():
+    """Capture snapshots in background every 5 seconds for UI display."""
+    while True:
+        try:
+            engine.capture_annotated_snapshot(app_settings["camera_url"])
+        except Exception as e:
+            logger.debug(f"Background snapshot failed: {e}")
+        time.sleep(5)
+
+
 # ─── Scheduler ─────────────────────────────────────────────────────────────────
 
 
@@ -583,6 +591,10 @@ if __name__ == "__main__":
     # Start scheduler in background
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
     scheduler_thread.start()
+
+    # Start background snapshot loop
+    snapshot_thread = threading.Thread(target=run_snapshot_loop, daemon=True)
+    snapshot_thread.start()
 
     # Start Flask (ingress uses port 5000)
     app.run(host="0.0.0.0", port=5000, debug=False)

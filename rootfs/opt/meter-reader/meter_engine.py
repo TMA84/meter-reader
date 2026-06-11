@@ -157,6 +157,16 @@ class MeterEngine:
                     pass
             self._snapshot_lock.release()
 
+    def get_cached_snapshot(self) -> str | None:
+        """Return path to last captured snapshot without triggering a new one."""
+        path = os.path.join(self.data_path, "snapshots", "latest.jpg")
+        return path if os.path.exists(path) else None
+
+    def get_cached_annotated_snapshot(self) -> str | None:
+        """Return path to last annotated snapshot without triggering a new one."""
+        path = os.path.join(self.data_path, "snapshots", "annotated.jpg")
+        return path if os.path.exists(path) else None
+
     def _get_esphome_base(self, camera_url: str) -> str | None:
         """Derive ESPHome webserver base URL (port 80) from camera URL."""
         try:
