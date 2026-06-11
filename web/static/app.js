@@ -338,6 +338,7 @@ async function loadCameraSettings() {
         setSlider('cam-led-delay', settings.led_delay_ms ?? 500);
         setSlider('cam-led-off-delay', settings.led_off_delay_ms ?? 300);
         setSlider('cam-snapshot-interval', settings.snapshot_interval_s ?? 5);
+        document.getElementById('cam-auto-snapshot').checked = settings.auto_snapshot ?? true;
         setSlider('cam-brightness', settings.brightness ?? 0);
         setSlider('cam-contrast', settings.contrast ?? 0);
         setSlider('cam-saturation', settings.saturation ?? 0);
@@ -361,6 +362,7 @@ async function saveCameraSettings() {
         led_delay_ms: parseInt(document.getElementById('cam-led-delay').value),
         led_off_delay_ms: parseInt(document.getElementById('cam-led-off-delay').value),
         snapshot_interval_s: parseInt(document.getElementById('cam-snapshot-interval').value),
+        auto_snapshot: document.getElementById('cam-auto-snapshot').checked,
         brightness: parseInt(document.getElementById('cam-brightness').value),
         contrast: parseInt(document.getElementById('cam-contrast').value),
         saturation: parseInt(document.getElementById('cam-saturation').value),
