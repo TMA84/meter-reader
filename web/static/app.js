@@ -398,7 +398,8 @@ async function saveCameraSettings() {
     }
 }
 
-function refreshCameraPreview() {
+async function refreshCameraPreview() {
+    await fetch(apiUrl('/snapshot/capture'), { method: 'POST' });
     const img = document.getElementById('camera-preview-img');
     img.src = apiUrl('/snapshot') + '?t=' + Date.now();
 }
