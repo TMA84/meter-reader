@@ -228,6 +228,14 @@
                                 </div>
                                 <span class="field-hint">Wartezeit nach dem Snapshot bevor die LED ausgeschaltet wird</span>
                             </div>
+                            <div class="slider-group">
+                                <label>Snapshot-Intervall (s)</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-snapshot-interval" min="1" max="60" step="1" value="5" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-snapshot-interval-val">5</span>
+                                </div>
+                                <span class="field-hint">Wie oft der Hintergrund-Snapshot aktualisiert wird</span>
+                            </div>
                         </div>
 
                         <div class="config-section">

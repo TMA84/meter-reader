@@ -554,13 +554,15 @@ def report_to_mqtt(value):
 # ─── Background snapshot thread ────────────────────────────────────────────────
 
 def run_snapshot_loop():
-    """Capture snapshots in background every 5 seconds for UI display."""
+    """Capture snapshots in background for UI display."""
     while True:
         try:
             engine.capture_annotated_snapshot(app_settings["camera_url"])
+            interval = engine._get_camera_settings().get("snapshot_interval_s", 5)
         except Exception as e:
             logger.debug(f"Background snapshot failed: {e}")
-        time.sleep(5)
+            interval = 5
+        time.sleep(max(1, interval))
 
 
 # ─── Scheduler ─────────────────────────────────────────────────────────────────
