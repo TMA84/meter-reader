@@ -114,12 +114,20 @@ def save_config():
     return jsonify({"status": "ok"})
 
 
+def _send_image_no_cache(img_path):
+    resp = send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
 @app.route("/api/snapshot", methods=["GET"])
 def get_snapshot():
     """Return cached snapshot (captured by background thread)."""
     img_path = engine.get_cached_snapshot()
     if img_path:
-        return send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
+        return _send_image_no_cache(img_path)
     return jsonify({"error": "No snapshot available yet"}), 503
 
 
@@ -128,7 +136,7 @@ def get_annotated_snapshot():
     """Return cached annotated snapshot (captured by background thread)."""
     img_path = engine.get_cached_annotated_snapshot()
     if img_path:
-        return send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
+        return _send_image_no_cache(img_path)
     return jsonify({"error": "No snapshot available yet"}), 503
 
 
