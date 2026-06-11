@@ -115,7 +115,7 @@ class MeterEngine:
                     logger.warning(f"LED control failed (continuing without): {e}")
 
             # Snapshot aufnehmen
-            resp = requests.get(camera_url, timeout=15, headers={"Connection": "close"})
+            resp = requests.get(camera_url, timeout=8, headers={"Connection": "close"})
             resp.raise_for_status()
 
             snapshot_path = os.path.join(self.data_path, "snapshots", "latest.jpg")

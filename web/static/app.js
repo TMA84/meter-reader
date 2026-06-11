@@ -459,7 +459,9 @@ function renderChart(readings) {
 
 // ─── Camera Settings ──────────────────────────────────────────────────────────
 async function loadCameraSettings() {
-    refreshCameraPreview();
+    // Show cached image immediately, don't trigger a new capture on page open
+    const img = document.getElementById('camera-preview-img');
+    if (img) img.src = apiUrl('/snapshot') + '?t=' + Date.now();
     try {
         const resp = await fetch(apiUrl('/camera/settings'));
         const settings = await resp.json();
