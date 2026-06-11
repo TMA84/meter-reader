@@ -478,7 +478,7 @@ async function loadCameraSettings() {
         document.getElementById('cam-wb-mode').value = settings.wb_mode || 'auto';
         document.getElementById('cam-resolution').value = settings.resolution || '800x600';
         document.getElementById('cam-jpeg-quality').value = settings.jpeg_quality ?? 10;
-        setSlider('cam-rotation', settings.rotation ?? 0);
+        setRotation(settings.rotation ?? 0);
         document.getElementById('cam-hmirror').checked = settings.horizontal_mirror || false;
         document.getElementById('cam-vflip').checked = settings.vertical_flip ?? true;
     } catch (e) {
@@ -501,7 +501,7 @@ async function saveCameraSettings() {
         wb_mode: document.getElementById('cam-wb-mode').value,
         resolution: document.getElementById('cam-resolution').value,
         jpeg_quality: parseInt(document.getElementById('cam-jpeg-quality').value),
-        rotation: parseInt(document.getElementById('cam-rotation').value),
+        rotation: parseInt(document.getElementById('cam-rotation').value) || 0,
         horizontal_mirror: document.getElementById('cam-hmirror').checked,
         vertical_flip: document.getElementById('cam-vflip').checked,
     };
@@ -531,6 +531,13 @@ async function refreshCameraPreview() {
     await fetch(apiUrl('/snapshot/capture'), { method: 'POST' });
     const img = document.getElementById('camera-preview-img');
     img.src = apiUrl('/snapshot') + '?t=' + Date.now();
+}
+
+function setRotation(deg) {
+    document.getElementById('cam-rotation').value = deg;
+    document.querySelectorAll('.btn-rotation').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.deg) === deg);
+    });
 }
 
 function setSlider(id, value) {

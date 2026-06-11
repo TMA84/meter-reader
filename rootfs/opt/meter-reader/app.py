@@ -10,7 +10,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+import cv2
+from flask import Flask, jsonify, render_template, request, send_file, send_from_directory
 
 from meter_engine import MeterEngine
 
@@ -129,6 +130,27 @@ def get_annotated_snapshot():
     if img_path:
         return send_from_directory(os.path.dirname(img_path), os.path.basename(img_path))
     return jsonify({"error": "No snapshot available yet"}), 503
+
+
+@app.route("/api/snapshot/roi/<int:index>", methods=["GET"])
+def get_roi_crop(index):
+    """Return the cropped ROI image for a given ROI index (debug)."""
+    import io
+    snapshot_path = engine.get_cached_snapshot()
+    if not snapshot_path:
+        return jsonify({"error": "No snapshot"}), 503
+    img = cv2.imread(snapshot_path)
+    if img is None:
+        return jsonify({"error": "Cannot read image"}), 500
+    meters = engine.config.get("meters", [])
+    rois = meters[0].get("rois", []) if meters else []
+    if index >= len(rois):
+        return jsonify({"error": f"No ROI {index}"}), 404
+    roi = rois[index]
+    x, y, w, h = roi.get("x", 0), roi.get("y", 0), roi.get("w", 50), roi.get("h", 50)
+    crop = img[y:y+h, x:x+w]
+    _, buf = cv2.imencode(".jpg", crop)
+    return send_file(io.BytesIO(buf.tobytes()), mimetype="image/jpeg")
 
 
 @app.route("/api/snapshot/timestamp", methods=["GET"])
