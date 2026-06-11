@@ -327,6 +327,9 @@ CAMERA_SETTINGS_FILE = os.path.join(CONFIG_DIR, "camera_settings.json")
 DEFAULT_CAMERA_SETTINGS = {
     "led_intensity": 50,
     "led_delay_ms": 500,
+    "led_off_delay_ms": 300,
+    "auto_snapshot": True,
+    "snapshot_interval_s": 5,
     "brightness": 0,
     "contrast": 0,
     "saturation": 0,
