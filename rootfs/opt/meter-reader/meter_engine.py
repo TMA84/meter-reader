@@ -98,7 +98,7 @@ class MeterEngine:
                 brightness = int(led_intensity * 255 / 100)
                 try:
                     requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_on?brightness={brightness}",
+                        f"{esphome_base}/light/Beleuchtung/turn_on?brightness={brightness}",
                         headers={"Content-Length": "0"},
                         timeout=3,
                     )
@@ -149,7 +149,7 @@ class MeterEngine:
                 time.sleep(led_off_delay_ms / 1000.0)
                 try:
                     requests.post(
-                        f"{esphome_base}/light/beleuchtung/turn_off",
+                        f"{esphome_base}/light/Beleuchtung/turn_off",
                         headers={"Content-Length": "0"},
                         timeout=3,
                     )
