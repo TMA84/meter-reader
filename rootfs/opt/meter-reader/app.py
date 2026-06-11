@@ -133,6 +133,15 @@ def get_annotated_snapshot():
     return jsonify({"error": "No snapshot available yet"}), 503
 
 
+@app.route("/api/snapshot/timestamp", methods=["GET"])
+def get_snapshot_timestamp():
+    """Return mtime of cached snapshot so UI can detect new images."""
+    path = engine.get_cached_annotated_snapshot()
+    if path and os.path.exists(path):
+        return jsonify({"ts": int(os.path.getmtime(path) * 1000)})
+    return jsonify({"ts": 0})
+
+
 @app.route("/api/snapshot/capture", methods=["POST"])
 def capture_snapshot_now():
     """Trigger an immediate snapshot outside the background loop."""

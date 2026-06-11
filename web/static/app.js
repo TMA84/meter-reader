@@ -6,6 +6,132 @@
 let currentConfig = { meters: [], version: 1 };
 let rois = [];
 
+// ─── Auto-refresh snapshot when new image available ───────────────────────────
+let lastSnapshotTs = 0;
+
+async function pollSnapshotUpdates() {
+    try {
+        const resp = await fetch(apiUrl('/snapshot/timestamp'));
+        const { ts } = await resp.json();
+        if (ts > lastSnapshotTs) {
+            lastSnapshotTs = ts;
+            // Update main snapshot image
+            const mainImg = document.getElementById('snapshot-img');
+            if (mainImg) mainImg.src = apiUrl('/snapshot/annotated') + '?t=' + ts;
+            // Update ROI canvas image if visible
+            const roiImg = document.getElementById('roi-img');
+            if (roiImg && roiImg.getAttribute('src')) {
+                const newSrc = apiUrl('/snapshot') + '?t=' + ts;
+                roiImg.onload = () => {
+                    const canvas = document.getElementById('roi-canvas');
+                    canvas.width = roiImg.naturalWidth;
+                    canvas.height = roiImg.naturalHeight;
+                    drawRoisOnCanvas();
+                };
+                roiImg.src = newSrc;
+            }
+        }
+    } catch (e) { /* ignore */ }
+}
+
+setInterval(pollSnapshotUpdates, 2000);
+
+// ─── ROI Drag & Drop ──────────────────────────────────────────────────────────
+let roiDrag = null; // { index, mode: 'move'|'resize', startX, startY, origRoi }
+
+const HANDLE_SIZE = 10;
+
+function getCanvasPos(canvas, e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY,
+    };
+}
+
+function hitTestRoi(roi, x, y) {
+    // Check resize handle (bottom-right corner)
+    if (x >= roi.x + roi.w - HANDLE_SIZE && x <= roi.x + roi.w + HANDLE_SIZE &&
+        y >= roi.y + roi.h - HANDLE_SIZE && y <= roi.y + roi.h + HANDLE_SIZE) {
+        return 'resize';
+    }
+    // Check move (inside box)
+    if (x >= roi.x && x <= roi.x + roi.w && y >= roi.y && y <= roi.y + roi.h) {
+        return 'move';
+    }
+    return null;
+}
+
+function roiCanvasMouseDown(e) {
+    const canvas = document.getElementById('roi-canvas');
+    const pos = getCanvasPos(canvas, e);
+    for (let i = rois.length - 1; i >= 0; i--) {
+        const mode = hitTestRoi(rois[i], pos.x, pos.y);
+        if (mode) {
+            roiDrag = { index: i, mode, startX: pos.x, startY: pos.y, origRoi: { ...rois[i] } };
+            canvas.style.cursor = mode === 'resize' ? 'nwse-resize' : 'grabbing';
+            e.preventDefault();
+            return;
+        }
+    }
+}
+
+function roiCanvasMouseMove(e) {
+    const canvas = document.getElementById('roi-canvas');
+    const pos = getCanvasPos(canvas, e);
+
+    if (!roiDrag) {
+        // Update cursor
+        let cursor = 'crosshair';
+        for (const roi of rois) {
+            const mode = hitTestRoi(roi, pos.x, pos.y);
+            if (mode === 'resize') { cursor = 'nwse-resize'; break; }
+            if (mode === 'move') { cursor = 'grab'; break; }
+        }
+        canvas.style.cursor = cursor;
+        return;
+    }
+
+    const dx = pos.x - roiDrag.startX;
+    const dy = pos.y - roiDrag.startY;
+    const orig = roiDrag.origRoi;
+    const roi = rois[roiDrag.index];
+
+    if (roiDrag.mode === 'move') {
+        roi.x = Math.max(0, Math.round(orig.x + dx));
+        roi.y = Math.max(0, Math.round(orig.y + dy));
+    } else {
+        roi.w = Math.max(10, Math.round(orig.w + dx));
+        roi.h = Math.max(10, Math.round(orig.h + dy));
+    }
+
+    drawRoisOnCanvas();
+    renderRoiList();
+    e.preventDefault();
+}
+
+function roiCanvasMouseUp(e) {
+    if (roiDrag) {
+        roiDrag = null;
+        document.getElementById('roi-canvas').style.cursor = 'crosshair';
+    }
+}
+
+function initRoiDragEvents() {
+    const canvas = document.getElementById('roi-canvas');
+    if (!canvas) return;
+    canvas.addEventListener('mousedown', roiCanvasMouseDown);
+    canvas.addEventListener('mousemove', roiCanvasMouseMove);
+    canvas.addEventListener('mouseup', roiCanvasMouseUp);
+    canvas.addEventListener('mouseleave', roiCanvasMouseUp);
+    canvas.addEventListener('touchstart', roiCanvasMouseDown, { passive: false });
+    canvas.addEventListener('touchmove', roiCanvasMouseMove, { passive: false });
+    canvas.addEventListener('touchend', roiCanvasMouseUp);
+}
+
 // Determine base path for API calls (ingress support)
 // Works by detecting the path prefix from the current page URL
 const BASE = window.location.pathname.replace(/\/$/, '');
@@ -173,8 +299,7 @@ async function loadRoiImage() {
         const canvas = document.getElementById('roi-canvas');
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
-        canvas.style.width = img.width + 'px';
-        canvas.style.height = img.height + 'px';
+        initRoiDragEvents();
         drawRoisOnCanvas();
     };
 }
@@ -187,15 +312,19 @@ function drawRoisOnCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     rois.forEach((roi, i) => {
-        // Rectangle
-        ctx.strokeStyle = '#4fd1c5';
+        const color = '#4fd1c5';
+        ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.strokeRect(roi.x, roi.y, roi.w, roi.h);
 
+        // Resize handle (bottom-right)
+        ctx.fillStyle = color;
+        ctx.fillRect(roi.x + roi.w - HANDLE_SIZE / 2, roi.y + roi.h - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+
         // Label
-        ctx.fillStyle = '#4fd1c5';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`${i + 1}`, roi.x + 2, roi.y - 4);
+        ctx.fillStyle = color;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`${i + 1}`, roi.x + 3, roi.y - 4);
     });
 }
 
