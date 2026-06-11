@@ -250,18 +250,20 @@ class MeterEngine:
             return snapshot_path
 
     def read_meter(self, camera_url: str) -> dict:
-        """Perform a full meter reading."""
+        """Capture a new snapshot and perform a meter reading."""
+        snapshot_path = self.capture_snapshot(camera_url)
+        if not snapshot_path:
+            return {"success": False, "error": "Could not capture image"}
+        return self.read_meter_from_snapshot(snapshot_path)
+
+    def read_meter_from_snapshot(self, snapshot_path: str) -> dict:
+        """Perform a meter reading on an existing snapshot file."""
         if not self.interpreter:
             return {"success": False, "error": "Kein Modell geladen"}
 
         meters = self.config.get("meters", [])
         if not meters:
             return {"success": False, "error": "No meters configured"}
-
-        # Capture image
-        snapshot_path = self.capture_snapshot(camera_url)
-        if not snapshot_path:
-            return {"success": False, "error": "Could not capture image"}
 
         try:
             img = cv2.imread(snapshot_path)

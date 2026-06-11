@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import schedule
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from meter_engine import MeterEngine
@@ -28,7 +27,6 @@ SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.json")
 # Default settings (from environment / HA addon config)
 DEFAULT_SETTINGS = {
     "camera_url": os.environ.get("CAMERA_URL", "http://192.168.1.50:8080/snapshot"),
-    "read_interval_minutes": int(os.environ.get("READ_INTERVAL", "5")),
     "mqtt_enabled": os.environ.get("MQTT_ENABLED", "false").lower() == "true",
     "mqtt_host": os.environ.get("MQTT_HOST", "core-mosquitto"),
     "mqtt_port": int(os.environ.get("MQTT_PORT", "1883")),
@@ -177,10 +175,11 @@ def test_roi():
 @app.route("/api/status", methods=["GET"])
 def get_status():
     """Get addon status."""
+    cam_settings = engine._get_camera_settings()
     return jsonify(
         {
             "camera_url": app_settings["camera_url"],
-            "read_interval": app_settings["read_interval_minutes"],
+            "snapshot_interval_s": cam_settings.get("snapshot_interval_s", 5),
             "mqtt_enabled": app_settings["mqtt_enabled"],
             "mqtt_topic": app_settings["mqtt_topic"],
             "last_reading": engine.last_reading,
@@ -211,10 +210,6 @@ def update_settings():
     if "camera_url" in data:
         if not isinstance(data["camera_url"], str) or not data["camera_url"].startswith("http"):
             errors.append("camera_url muss eine gültige HTTP-URL sein")
-    if "read_interval_minutes" in data:
-        val = data["read_interval_minutes"]
-        if not isinstance(val, int) or val < 1 or val > 60:
-            errors.append("read_interval_minutes muss zwischen 1 und 60 liegen")
     if "mqtt_enabled" in data:
         if not isinstance(data["mqtt_enabled"], bool):
             errors.append("mqtt_enabled muss true oder false sein")
@@ -233,11 +228,8 @@ def update_settings():
         return jsonify({"status": "error", "errors": errors}), 400
 
     # Apply changes
-    old_interval = app_settings["read_interval_minutes"]
-
-    for key in ("camera_url", "read_interval_minutes", "mqtt_enabled", "mqtt_host", "mqtt_port", "mqtt_username", "mqtt_password", "mqtt_topic"):
+    for key in ("camera_url", "mqtt_enabled", "mqtt_host", "mqtt_port", "mqtt_username", "mqtt_password", "mqtt_topic"):
         if key in data:
-            # Don't overwrite password with masked value
             if key == "mqtt_password" and data[key] == "••••••••":
                 continue
             app_settings[key] = data[key]
@@ -245,10 +237,6 @@ def update_settings():
     # Persist
     save_settings(app_settings)
     logger.info(f"Settings updated: {app_settings}")
-
-    # Reschedule if interval changed
-    if app_settings["read_interval_minutes"] != old_interval:
-        reschedule_readings()
 
     return jsonify({"status": "ok", "settings": app_settings})
 
@@ -499,8 +487,11 @@ def apply_camera_settings():
 
 
 def perform_reading():
-    """Perform a meter reading and report to HA."""
-    result = engine.read_meter(app_settings["camera_url"])
+    """Perform a meter reading on the cached snapshot and report to HA."""
+    snapshot_path = engine.get_cached_snapshot()
+    if not snapshot_path:
+        return {"success": False, "error": "Noch kein Snapshot verfügbar"}
+    result = engine.read_meter_from_snapshot(snapshot_path)
 
     if result.get("success"):
         value = result["value"]
@@ -578,38 +569,26 @@ def report_to_mqtt(value):
 # ─── Background snapshot thread ────────────────────────────────────────────────
 
 def run_snapshot_loop():
-    """Capture snapshots in background for UI display."""
+    """Capture snapshots in background, then run meter reading if model is loaded."""
     while True:
         try:
             cam_settings = engine._get_camera_settings()
             interval = cam_settings.get("snapshot_interval_s", 5)
             auto_enabled = cam_settings.get("auto_snapshot", True)
             if auto_enabled:
-                engine.capture_annotated_snapshot(app_settings["camera_url"])
+                snapshot_path = engine.capture_annotated_snapshot(app_settings["camera_url"])
+                if snapshot_path and engine.interpreter:
+                    result = engine.read_meter_from_snapshot(snapshot_path)
+                    if result.get("success"):
+                        report_to_ha(result["value"])
+                        if app_settings["mqtt_enabled"]:
+                            report_to_mqtt(result["value"])
+                    else:
+                        logger.debug(f"Reading failed: {result.get('error')}")
         except Exception as e:
             logger.debug(f"Background snapshot failed: {e}")
             interval = 5
         time.sleep(max(1, interval))
-
-
-# ─── Scheduler ─────────────────────────────────────────────────────────────────
-
-
-def reschedule_readings():
-    """Clear and re-create the scheduled job with current interval."""
-    schedule.clear()
-    schedule.every(app_settings["read_interval_minutes"]).minutes.do(perform_reading)
-    logger.info(f"Scheduler updated: reading every {app_settings['read_interval_minutes']} minutes")
-
-
-def run_scheduler():
-    """Background thread for scheduled readings."""
-    schedule.every(app_settings["read_interval_minutes"]).minutes.do(perform_reading)
-    logger.info(f"Scheduler started: reading every {app_settings['read_interval_minutes']} minutes")
-
-    while True:
-        schedule.run_pending()
-        time.sleep(10)
 
 
 # ─── Main ──────────────────────────────────────────────────────────────────────
@@ -617,11 +596,7 @@ def run_scheduler():
 if __name__ == "__main__":
     logger.info("Meter Reader Addon starting...")
 
-    # Start scheduler in background
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-
-    # Start background snapshot loop
+    # Start background snapshot + reading loop
     snapshot_thread = threading.Thread(target=run_snapshot_loop, daemon=True)
     snapshot_thread.start()
 

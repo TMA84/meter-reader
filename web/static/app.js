@@ -550,7 +550,6 @@ async function loadSettings() {
         const settings = await resp.json();
 
         document.getElementById('setting-camera-url').value = settings.camera_url || '';
-        document.getElementById('setting-interval').value = settings.read_interval_minutes || 5;
         document.getElementById('setting-mqtt-enabled').checked = settings.mqtt_enabled || false;
         document.getElementById('setting-mqtt-host').value = settings.mqtt_host || '';
         document.getElementById('setting-mqtt-port').value = settings.mqtt_port || 1883;
@@ -571,7 +570,6 @@ async function loadSettings() {
 async function saveSettings() {
     const settings = {
         camera_url: document.getElementById('setting-camera-url').value.trim(),
-        read_interval_minutes: parseInt(document.getElementById('setting-interval').value),
         mqtt_enabled: document.getElementById('setting-mqtt-enabled').checked,
         mqtt_host: document.getElementById('setting-mqtt-host').value.trim(),
         mqtt_port: parseInt(document.getElementById('setting-mqtt-port').value),
