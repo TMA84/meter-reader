@@ -220,6 +220,14 @@
                                 </div>
                                 <span class="field-hint">Wartezeit bis die Kamera das Bild aufnimmt (Belichtung anpassen)</span>
                             </div>
+                            <div class="slider-group">
+                                <label>Verzögerung nach Snapshot (ms)</label>
+                                <div class="slider-row">
+                                    <input type="range" id="cam-led-off-delay" min="0" max="2000" step="50" value="300" oninput="updateSliderLabel(this)" />
+                                    <span class="slider-value" id="cam-led-off-delay-val">300</span>
+                                </div>
+                                <span class="field-hint">Wartezeit nach dem Snapshot bevor die LED ausgeschaltet wird</span>
+                            </div>
                         </div>
 
                         <div class="config-section">
