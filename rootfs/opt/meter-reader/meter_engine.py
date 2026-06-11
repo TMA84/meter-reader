@@ -188,7 +188,8 @@ class MeterEngine:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
                 pass
-        return {"led_intensity": 0, "led_delay_ms": 500, "rotation": 0}
+        return {"led_intensity": 50, "led_delay_ms": 500, "led_off_delay_ms": 300,
+                "auto_snapshot": True, "snapshot_interval_s": 5, "rotation": 0}
 
     def _rotate_image(self, img: np.ndarray, degrees: int) -> np.ndarray:
         """Rotate image by arbitrary degrees. Uses fast path for 90/180/270."""

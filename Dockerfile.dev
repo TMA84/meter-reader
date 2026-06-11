@@ -18,9 +18,7 @@ RUN pip install --no-cache-dir \
     schedule==1.2.* \
     requests
 
-# Try tflite-runtime, fall back to full tensorflow if not available for platform
-RUN pip install --no-cache-dir tflite-runtime==2.14.0 || \
-    pip install --no-cache-dir "tensorflow<2.16"
+RUN pip install --no-cache-dir ai-edge-litert==2.1.5
 
 # Copy application
 COPY rootfs/opt/meter-reader/ /opt/meter-reader/
