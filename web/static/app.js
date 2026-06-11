@@ -501,7 +501,7 @@ async function saveCameraSettings() {
         wb_mode: document.getElementById('cam-wb-mode').value,
         resolution: document.getElementById('cam-resolution').value,
         jpeg_quality: parseInt(document.getElementById('cam-jpeg-quality').value),
-        rotation: parseInt(document.getElementById('cam-rotation').value) || 0,
+        rotation: parseFloat(document.getElementById('cam-rotation').value) || 0,
         horizontal_mirror: document.getElementById('cam-hmirror').checked,
         vertical_flip: document.getElementById('cam-vflip').checked,
     };
@@ -516,8 +516,7 @@ async function saveCameraSettings() {
 
         if (data.status === 'ok') {
             showToast('Kamera-Einstellungen gespeichert & angewendet', 'success');
-            // Refresh preview after a short delay to see the effect
-            setTimeout(refreshCameraPreview, 1000);
+            await reprocessSnapshot();
         } else {
             const msg = data.errors ? data.errors.join(', ') : 'Unbekannter Fehler';
             showToast(`Fehler: ${msg}`, 'error');
@@ -525,6 +524,15 @@ async function saveCameraSettings() {
     } catch (e) {
         showToast('Verbindungsfehler', 'error');
     }
+}
+
+async function reprocessSnapshot() {
+    await fetch(apiUrl('/snapshot/reprocess'), { method: 'POST' });
+    const ts = Date.now();
+    const preview = document.getElementById('camera-preview-img');
+    if (preview) preview.src = apiUrl('/snapshot') + '?t=' + ts;
+    const main = document.getElementById('snapshot-img');
+    if (main) main.src = apiUrl('/snapshot/annotated') + '?t=' + ts;
 }
 
 async function refreshCameraPreview() {
@@ -535,9 +543,18 @@ async function refreshCameraPreview() {
 
 function setRotation(deg) {
     document.getElementById('cam-rotation').value = deg;
-    document.querySelectorAll('.btn-rotation').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.deg) === deg);
-    });
+    document.getElementById('cam-rotation-num').value = deg;
+}
+
+function syncRotationFromSlider(input) {
+    document.getElementById('cam-rotation-num').value = input.value;
+}
+
+function syncRotationFromNumber(input) {
+    let val = parseFloat(input.value);
+    if (isNaN(val)) val = 0;
+    val = Math.min(359.9, Math.max(0, val));
+    document.getElementById('cam-rotation').value = val;
 }
 
 function setSlider(id, value) {

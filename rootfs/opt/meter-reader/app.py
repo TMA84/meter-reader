@@ -153,6 +153,51 @@ def get_roi_crop(index):
     return send_file(io.BytesIO(buf.tobytes()), mimetype="image/jpeg")
 
 
+@app.route("/api/snapshot/reprocess", methods=["POST"])
+def reprocess_snapshot():
+    """Apply current rotation/mirror settings to the cached snapshot without re-capturing."""
+    snapshot_path = engine.get_cached_snapshot()
+    if not snapshot_path:
+        return jsonify({"error": "No snapshot available"}), 503
+
+    cam_settings = engine._get_camera_settings()
+    h_mirror = cam_settings.get("horizontal_mirror", False)
+    v_flip = cam_settings.get("vertical_flip", False)
+    rotation = cam_settings.get("rotation", 0)
+
+    # Read original — we need an unrotated source, so we re-read from disk
+    # (latest.jpg is always the last-captured raw image after transform)
+    # To allow re-applying, we keep an original backup
+    original_path = snapshot_path.replace("latest.jpg", "latest_original.jpg")
+    if not os.path.exists(original_path):
+        import shutil
+        shutil.copy2(snapshot_path, original_path)
+
+    img = cv2.imread(original_path)
+    if img is None:
+        return jsonify({"error": "Cannot read image"}), 500
+
+    if h_mirror:
+        img = cv2.flip(img, 1)
+    if v_flip:
+        img = cv2.flip(img, 0)
+    if rotation != 0:
+        img = engine._rotate_image(img, rotation)
+
+    cv2.imwrite(snapshot_path, img)
+    # Rebuild annotated version
+    annotated_path = snapshot_path.replace("latest.jpg", "annotated.jpg")
+    annotated_img = img.copy()
+    meters = engine.config.get("meters", [])
+    for meter in meters:
+        for roi in meter.get("rois", []):
+            x, y, w, h = roi.get("x", 0), roi.get("y", 0), roi.get("w", 50), roi.get("h", 50)
+            cv2.rectangle(annotated_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv2.imwrite(annotated_path, annotated_img)
+
+    return jsonify({"status": "ok"})
+
+
 @app.route("/api/snapshot/timestamp", methods=["GET"])
 def get_snapshot_timestamp():
     """Return mtime of cached snapshot so UI can detect new images."""
@@ -472,8 +517,8 @@ def update_camera_settings():
         if not (6 <= data["jpeg_quality"] <= 63):
             errors.append("jpeg_quality muss zwischen 6 und 63 liegen")
     if "rotation" in data:
-        if not (0 <= data["rotation"] <= 359):
-            errors.append("rotation muss zwischen 0 und 359 liegen")
+        if not (0 <= data["rotation"] < 360):
+            errors.append("rotation muss zwischen 0 und 359.9 liegen")
 
     if errors:
         return jsonify({"status": "error", "errors": errors}), 400
