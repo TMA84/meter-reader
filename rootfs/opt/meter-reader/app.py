@@ -557,11 +557,12 @@ def run_snapshot_loop():
     """Capture snapshots in background for UI display."""
     while True:
         try:
-            engine.capture_annotated_snapshot(app_settings["camera_url"])
             interval = engine._get_camera_settings().get("snapshot_interval_s", 5)
+            engine.capture_annotated_snapshot(app_settings["camera_url"])
         except Exception as e:
             logger.debug(f"Background snapshot failed: {e}")
             interval = 5
+        logger.info(f"Next snapshot in {interval}s")
         time.sleep(max(1, interval))
 
 
