@@ -458,10 +458,42 @@ function renderChart(readings) {
 }
 
 // ─── Camera Settings ──────────────────────────────────────────────────────────
+async function loadModels() {
+    try {
+        const resp = await fetch(apiUrl('/models'));
+        const data = await resp.json();
+        const sel = document.getElementById('model-select');
+        sel.innerHTML = data.models.map(m =>
+            `<option value="${m}" ${m === data.active ? 'selected' : ''}>${m}</option>`
+        ).join('');
+    } catch (e) {
+        console.error('Model list load failed:', e);
+    }
+}
+
+async function selectModel(model) {
+    try {
+        const resp = await fetch(apiUrl('/models/select'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model }),
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            showToast(`Modell geladen: ${data.active}`, 'success');
+        } else {
+            showToast(`Fehler: ${data.error}`, 'error');
+        }
+    } catch (e) {
+        showToast('Verbindungsfehler', 'error');
+    }
+}
+
 async function loadCameraSettings() {
     // Show cached image immediately, don't trigger a new capture on page open
     const img = document.getElementById('camera-preview-img');
     if (img) img.src = apiUrl('/snapshot') + '?t=' + Date.now();
+    loadModels();
     try {
         const resp = await fetch(apiUrl('/camera/settings'));
         const settings = await resp.json();

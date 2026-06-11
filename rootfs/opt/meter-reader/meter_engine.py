@@ -29,15 +29,19 @@ class MeterEngine:
         self.last_read_time = None
         self.interpreter = None  # ai-edge-litert Interpreter
         self.input_details = None
-        self._snapshot_lock = threading.Lock()
         self.output_details = None
+        self.active_model = None
+        self._snapshot_lock = threading.Lock()
 
         self._load_model()
         self._load_config()
 
-    def _load_model(self):
-        """Load TFLite model via ai-edge-litert (supports TFL3 format)."""
-        model_path = os.path.join(self.models_path, "dig-class11.tflite")
+    def _load_model(self, model_filename: str | None = None):
+        """Load TFLite model. Uses model_filename if given, otherwise reads from config."""
+        if model_filename is None:
+            model_filename = self._get_active_model_filename()
+
+        model_path = os.path.join(self.models_path, model_filename)
         if not os.path.exists(model_path):
             logger.warning(f"Modell nicht gefunden: {model_path}")
             return
@@ -48,11 +52,36 @@ class MeterEngine:
             self.interpreter.allocate_tensors()
             self.input_details = self.interpreter.get_input_details()
             self.output_details = self.interpreter.get_output_details()
+            self.active_model = model_filename
             shape = self.input_details[0]['shape']
             logger.info(f"TFLite-Modell geladen: {model_path} (Input: {shape})")
         except Exception as e:
             logger.error(f"Modell konnte nicht geladen werden: {e}")
             self.interpreter = None
+
+    def _get_active_model_filename(self) -> str:
+        """Read active model from camera settings, fall back to first available."""
+        cam_settings_path = os.path.join(os.path.dirname(self.config_path), "camera_settings.json")
+        if os.path.exists(cam_settings_path):
+            try:
+                with open(cam_settings_path) as f:
+                    s = json.load(f)
+                if "model" in s:
+                    return s["model"]
+            except Exception:
+                pass
+        # Fall back to first .tflite found
+        models = sorted(f for f in os.listdir(self.models_path) if f.endswith(".tflite"))
+        return models[0] if models else "dig-class11.tflite"
+
+    def reload_model(self, model_filename: str):
+        """Switch to a different model at runtime."""
+        self.interpreter = None
+        self._load_model(model_filename)
+
+    def list_models(self) -> list[str]:
+        """Return all available .tflite model filenames."""
+        return sorted(f for f in os.listdir(self.models_path) if f.endswith(".tflite"))
 
     def _load_config(self):
         """Load meter configuration."""

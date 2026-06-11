@@ -377,6 +377,34 @@ def get_diagnostics():
     })
 
 
+@app.route("/api/models", methods=["GET"])
+def get_models():
+    """List available models and return the active one."""
+    return jsonify({
+        "models": engine.list_models(),
+        "active": engine.active_model,
+    })
+
+
+@app.route("/api/models/select", methods=["POST"])
+def select_model():
+    """Switch active model and persist the choice."""
+    data = request.get_json()
+    model = data.get("model")
+    if not model or model not in engine.list_models():
+        return jsonify({"status": "error", "error": "Ungültiges Modell"}), 400
+
+    engine.reload_model(model)
+
+    # Persist in camera settings
+    cam_settings = load_camera_settings()
+    cam_settings["model"] = model
+    save_camera_settings(cam_settings)
+
+    logger.info(f"Model switched to: {model}")
+    return jsonify({"status": "ok", "active": engine.active_model})
+
+
 @app.route("/api/mqtt/test", methods=["POST"])
 def test_mqtt():
     """Test MQTT broker connection."""

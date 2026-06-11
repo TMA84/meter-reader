@@ -205,6 +205,15 @@
 
                     <div class="camera-controls">
                         <div class="config-section">
+                            <h3>KI-Modell</h3>
+                            <div class="form-group">
+                                <label for="model-select">Aktives Modell</label>
+                                <select id="model-select" onchange="selectModel(this.value)"></select>
+                                <span class="field-hint">dig-class11 = Rollenzähler · dig-class100 = LCD/Segment · dig-cont = kontinuierlich · ana-cont = Analogzeiger</span>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
                             <h3>LED-Beleuchtung</h3>
                             <div class="slider-group">
                                 <label>Intensität</label>
