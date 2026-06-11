@@ -133,6 +133,15 @@ def get_annotated_snapshot():
     return jsonify({"error": "No snapshot available yet"}), 503
 
 
+@app.route("/api/snapshot/capture", methods=["POST"])
+def capture_snapshot_now():
+    """Trigger an immediate snapshot outside the background loop."""
+    img_path = engine.capture_annotated_snapshot(app_settings["camera_url"])
+    if img_path:
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "Snapshot failed"}), 500
+
+
 @app.route("/api/read", methods=["POST"])
 def trigger_read():
     """Manually trigger a meter reading."""

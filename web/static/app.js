@@ -70,6 +70,7 @@ async function triggerReading() {
 }
 
 async function refreshSnapshot() {
+    await fetch(apiUrl('/snapshot/capture'), { method: 'POST' });
     const img = document.getElementById('snapshot-img');
     img.src = apiUrl('/snapshot/annotated') + '?t=' + Date.now();
 }
