@@ -260,15 +260,18 @@ def get_diagnostics():
     except ImportError:
         runtime = "nicht verfügbar"
 
-    # Kamera erreichbar?
+    # Kamera erreichbar? Gecachtes Snapshot-Alter prüfen (kein Live-Request)
     camera_reachable = False
     camera_error = None
-    try:
-        import requests as req
-        resp = req.get(app_settings["camera_url"], timeout=5, headers={"Connection": "close"})
-        camera_reachable = resp.status_code == 200
-    except Exception as e:
-        camera_error = str(e)
+    cached_path = engine.get_cached_snapshot()
+    if cached_path and os.path.exists(cached_path):
+        age_s = time.time() - os.path.getmtime(cached_path)
+        if age_s < 300:  # unter 5 Minuten alt = Kamera ist erreichbar
+            camera_reachable = True
+        else:
+            camera_error = f"Letztes Bild ist {int(age_s)}s alt"
+    else:
+        camera_error = "Noch kein Snapshot verfügbar"
 
     # Konfiguration vollständig?
     config = engine.get_config()
